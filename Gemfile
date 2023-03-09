@@ -22,5 +22,4 @@ end
 group :other_plugins do
     gem 'feedjira'
     gem 'httparty'
-    gem 'faraday_middleware-request-retry'
 end
