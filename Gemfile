@@ -17,9 +17,10 @@ group :jekyll_plugins do
     gem 'mini_racer'
     gem 'unicode_utils'
     gem 'webrick'
-    gem 'faraday_middleware-request-retry'
+    
 end
 group :other_plugins do
     gem 'feedjira'
     gem 'httparty'
+    gem 'faraday_middleware-request-retry'
 end
