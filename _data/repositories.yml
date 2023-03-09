@@ -1,12 +1,8 @@
 github_users:
-  - torvalds
-  - alshedivat
+  - cenk-celik
 
 github_repos:
-  - alshedivat/al-folio
-  - twbs/bootstrap
-  - jekyll/jekyll
-  - jquery/jquery
-  - FortAwesome/Font-Awesome
-  - jpswalsh/academicons
-  - mathjax/MathJax
+  - cenk-celik/c_elegans_rnaseq
+  - cenk-celik/cold-shock
+  - cenk-celik/rosalind_solutions
+  - cenk-celik/jhu_gdsc

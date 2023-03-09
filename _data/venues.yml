@@ -1,6 +1,23 @@
-"AJP":
-  url: https://aapt.scitation.org/journal/ajp
-  color: "#00369f"
+"Nat Commun":
+  url: https://www.nature.com/ncomms/
+  color: "#D44431"
 
-"PhysRev":
-  url: https://journals.aps.org/
+"Prog Lipid Res":
+  url: https://www.sciencedirect.com/journal/progress-in-lipid-research
+  color: "#555CA2"
+
+"Cell Rep":
+  url: https://www.cell.com/cell-reports/home
+  color: "#367BB7"
+
+"Acta Biomater":
+  url: https://www.sciencedirect.com/journal/acta-biomaterialia
+  color: "#0C265A"
+
+"Stem C Res Ther":
+  url: https://stemcellres.biomedcentral.com
+  color: "#050387"
+
+"Eng Life Sci":
+  url: https://onlinelibrary.wiley.com/journal/16182863
+  color: "#3A815D"

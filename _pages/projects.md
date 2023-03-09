@@ -1,11 +1,11 @@
 ---
 layout: page
-title: projects
+title: Portfolio
 permalink: /projects/
-description: A growing collection of your cool projects.
-nav: true
+description: Here are some work I have done besides academia.
+nav: false
 nav_order: 2
-display_categories: [work, fun]
+display_categories: [modelling, acting]
 horizontal: false
 ---
 

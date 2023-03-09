@@ -2,96 +2,112 @@
   type: map
   contents:
     - name: Full Name
-      value: Albert Einstein
-    - name: Date of Birth
-      value: 14th March 1879
-    - name: Languages
-      value: English, German
-
-- title: Education
-  type: time_table
-  contents:
-    - title: PhD
-      institution: University of Zurich, Zurich, Switzerland
-      year: 1905
-      description:
-        - Description 1.
-        - Description 2.
-        - title: Description 3.
-          contents:
-            - Sub-description 1.
-            - Sub-description 2.
-    - title: Federal teaching diploma
-      institution: Eidgenössische Technische Hochschule, Zurich, Switzerland
-      year: 1900
-      description:
-        - Description 1.
-        - Description 2.
+      value: Cenk Celik
 
 - title: Experience
   type: time_table
   contents:
-    - title: Professor of Theoretical Physics
-      institution: Institute for Advanced Study, Princeton University
-      year: 1933 - 1955
+    - title: Research Fellow
+      institution: School of Biological Sciences, Nanyang Technological University, Singapore
+      year: 2021 - present
       description:
-        - Description 1.
-        - Description 2.
-        - title: Description 3.
-          contents:
-            - Sub-description 1.
-            - Sub-description 2.
-    - title: Visiting Professor
-      institution: California Institute of Technology, Pasadena, California, US
-      year: 1933
+        - Led a project researching <i>in vivo</i> and <i>in vitro</i> host-pathogen synergy in wound infection
+        - Conducted and analysed next-generation sequencing (bulk & single-cell RNA-seq) data by developing pipelines in <b>R</b> and <b>Python</b>
+        - Managed and backed up data for the team
+        - Supported and supervised undergraduate and PhD students
+        - Utilised <i>C. elegans</i>, <i>D. rerio</i> and mouse disease models for different projects focusing on pathologies of endoplasmic reticulum stress
+        - Drafted, edited, revised and contributed data to papers for submission in high-impact journals
+        - Trained new research staff
+
+    - title: Research Assistant
+      institution: National University Hospital System, Singapore
+      year: 2019 - 2020
       description:
-        - Description 1.
-        - Description 2.
+        - Produced and analysed data to create representative graphs highlighting results for presentations
+        - Planned, modified and executed research techniques, procedures and tests for nano-fibrous scaffold fabrication - Performed statistical, qualitative and quantitative analysis
+        - Mentored new research staff
 
-    - title: Director
-      institution: Kaiser Wilhelm Institute for Physics, Berlin, Germany.
-      year: 1917-1933
-
-    - title: Professor of Theoretical Physics
-      institution: Karl-Ferdinand University, Prague, Czechoslovakia
-      year: 1911 - 1917
+    - title: Graduate Assistant
+      institution: National University of Singapore, Singapore
+      year: 2016 - 2018
       description:
+        - Instructed undergraduate students on the fundamentals of cell culture as well as methods for collecting, analysing and reporting data
+        - Mentored Master’s students throughout all phases of their research projects
 
-    - title: Associate Professor of Theoretical Physics
-      institution: University of Zurich, Zurich, Switzerland
-      year: 1909 - 1911
-
-- title: Open Source Projects
+- title: Education
   type: time_table
   contents:
-    - title: <a href="https://github.com/alshedivat/al-folio">al-folio</a>
-      year: 2015-now
-      description: A beautiful, simple, clean, and responsive Jekyll theme for academics.
+    - title: PhD in Medicine
+      institution: National University of Singapore, Singapore
+      year: 2020
+      description:
+        - Researched scaffold-mediated stem cell chondrogenesis by pulsed electromagnetic fields
+        - Published a first-author research article (IF = 10.633) and contributed to another research article (IF = 8.079)
+        - Presented in two international conferences
+        - Awarded Singapore International Graduate Award scholarship by NUS
+        - Awarded Young Orthopaedic Researcher Award by APOA Sports Meeting ’19 - Awarded NUS Researcher Travel Grant by the National University of Singapore - Wrote a book chapter as a first author
+    - title: MSc in Bioengineering
+      institution: Ege University, Turkey
+      year: 2015
+      description:
+        - Produced and characterised hybrid tissue scaffold approaches for 3D vascularised bone tissue 
+        - Awarded TUBITAK 1002 and TUBITAK Career Grant scholarships
+    - title: BSc in Bioengineering
+      institution: Ege University, Turkey
+      year: 2012
+      description:
+        - Received Republic of Turkey Prime Minister Scholarship (4 years)
+        - Awarded and administered TUBITAK 2209 University Students Research Projects Support Program
 
-- title: Honors and Awards
-  type: time_table
-  contents:
-    - year: 1921
-      items: 
-        - Nobel Prize in Physics 
-        - Matteucci Medal
-    - year: 2029
-      items: 
-        - Max Planck Medal
-
-- title: Academic Interests
+- title: Proficiencies
   type: nested_list
   contents:
-    - title: Topic 1.
+    - title: Computational
       items: 
-        - Description 1.
-        - Description 2.
-    - title: Topic 2.
+        - R/RStudio, .Rmd
+        - Python (>= 3.7)
+        - Shell
+        - Cell Ranger (>= 6.1.2)
+        - Loupe Browser
+        
+    - title: Wet-lab
       items:
-        - Description 1.
-        - Description 2.
+        - Single-cell & bulk RNA-seq
+        - Handling of mice & rats
+        - Stable cell line generation
+        - qPCR, Immunoblotting, IHC, IF
+        - Mammalian cell culture
+        - Confocal imaging
 
-- title: Other Interests
-  type: list
+- title: Volunteering
+  type: time_table
   contents:
-    - <u>Hobbies:</u> Hobby 1, Hobby 2, etc.
+    - year: 2021 - present
+      items:
+        <b>Bioinformatics Instructor</b> - <a href="https://kizcode.org" target="_blank">KizCode</a>
+    - year: 2016 - 2018
+      items:
+        <b>Mentor</b> - <a href="https://www.mentorink.com/tev" target="_blank">Mentorink</a>
+
+
+- title: Awards & Honours
+  type: time_table
+  contents:
+    - year: 2022
+      items: 
+        <b>Translational Researcher Programme</b> - 10X Genomics, Inc., Singapore
+    - year: 2019
+      items: 
+        <b>Young Orthopaedic Researcher</b> - APOA Sports Meeting ’19, Kuala Lumpur, Malaysia
+    - year: 2018
+      items:
+        <b>Researcher Travel Grant</b> - National University of Singapore, Singapore
+    - year: 2015 - 2019
+      items:
+        <b>Singapore International Graduate Award</b> - National University Singapore, Singapore
+    - year: 2014 - 2015
+      items:
+        <b>Research Scholarship</b> - TUBITAK 1002, Turkey
+    - year: 2012 - 2013
+      items:
+        <b>Research Scholarship</b> - TUBITAK Career Grant, Turkey
