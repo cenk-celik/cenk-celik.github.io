@@ -153,8 +153,8 @@ disqus_shortname:  # put your disqus shortname
 # If you have blog posts published on medium.com or other exteranl sources,
 # you can display them in your blog by adding a link to the RSS feed.
 external_sources:
-  - name: medium
-    rss_url: https://cenk-celik.github.io/blog
+  - name: medium.com  # name of the source (arbitrary string)
+    rss_url: https://medium.com/@<your-medium-username>/feed
 
 # -----------------------------------------------------------------------------
 # Collections
