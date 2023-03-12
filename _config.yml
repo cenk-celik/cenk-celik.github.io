@@ -133,12 +133,12 @@ related_blog_posts:
 # the information below.
 giscus:
   repo: cenk-celik/cenk-celik.github.io      # <your-github-user-name>/<your-github-repo-name>
-  repo_id: R_kgDOJHPb0g
+  repo_id: R_kgDOJHbaiQ
   category: General             # name of the category under which discussions will be created
-  category_id: DIC_kwDOJHPb0s4CUwYO
-  mapping: title                 # identify discussions by post title
+  category_id: DIC_kwDOJHbaic4CU0Ws
+  mapping: pathname                 # identify discussions by post title
   strict: 0                   # use strict identification mode
-  reactions_enabled: 0           # enable (1) or disable (0) emoji reactions
+  reactions_enabled: 0          # enable (1) or disable (0) emoji reactions
   input_position: bottom         # whether to display input form below (bottom) or above (top) the comments
   theme: preferred_color_scheme  # name of the color scheme (preferred works well with al-folio light/dark mode)
   emit_metadata: 0
