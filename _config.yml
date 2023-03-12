@@ -300,7 +300,7 @@ external_links:
   enabled: false
   rel: external nofollow noopener
   target: _blank
-  exclude:
+  exclude: true
 
 
 # -----------------------------------------------------------------------------
