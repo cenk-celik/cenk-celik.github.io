@@ -21,3 +21,11 @@
 "Eng Life Sci":
   url: https://onlinelibrary.wiley.com/journal/16182863
   color: "#3A815D"
+
+"IGI Global":
+  url: https://www.igi-global.com
+  color: "#224C8C"
+
+"Springer":
+  url: https://link.springer.com
+  color: "#0C2757"
