@@ -17,7 +17,7 @@ selected_papers: true # includes a list of papers marked as "selected={true}"
 social: true  # includes social icons at the bottom of the page
 ---
 
-I'm a Research Fellow at Nanyang Technological University, School of Biological Scientist. I study unfolded protein response in wound healing, and several others, using bioinformatics tools. 
+I'm a Research Fellow at Nanyang Technological University, School of Biological Sciences. I study unfolded protein response in wound healing, and several others, using bioinformatics methods. 
 
 As a self-taught, nascent bioinformatician, I try to use cutting-edge tools to interrogate metabolic diseases at the bulk and single-cell transcriptomics resolution.
 
