@@ -8,6 +8,12 @@
   type: time_table
   contents:
     - title: Research Fellow
+      institution: Genetics Institute, University College London, UK
+      year: 2023 - present
+      description:
+        - Researched tumour dormancy and G0 arrest in several cancers using bulk and single-cell RNA-sequencing data
+
+    - title: Research Fellow
       institution: School of Biological Sciences, Nanyang Technological University, Singapore
       year: 2021 - present
       description:
