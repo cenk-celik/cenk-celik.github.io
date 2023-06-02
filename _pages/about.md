@@ -11,7 +11,7 @@ profile:
   address: >
     <p align='center'>Darwin Building</p>
     <p align='center'>Gower Street</p>
-    <p align='center'>WC1E 6BT London, United Kingdom</p>
+    <p align='center'>WC1E 6BT London, UK</p>
 
 news: true  # includes a list of news items
 selected_papers: true # includes a list of papers marked as "selected={true}"
