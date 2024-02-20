@@ -11,7 +11,7 @@
       institution: Genetics Institute, University College London, UK
       year: 2023 - present
       description:
-        - Researched tumour dormancy and G0 arrest in several cancers using bulk and single-cell RNA-sequencing data
+        - Researched tumour dormancy and G0 arrest in several cancers using bulk, single-cell and spatial transcriptomics data
 
     - title: Research Fellow
       institution: School of Biological Sciences, Nanyang Technological University, Singapore
@@ -71,7 +71,7 @@
     - title: Computational
       items: 
         - R/RStudio, .Rmd
-        - Python (>= 3.7)
+        - Python
         - Shell
         - Cell Ranger (>= 6.1.2)
         - Loupe Browser
@@ -88,9 +88,6 @@
 - title: Volunteering
   type: time_table
   contents:
-    - year: 2021 - present
-      items:
-        <b>Bioinformatics Instructor</b> - <a href="https://kizcode.org" target="_blank">KizCode</a>
     - year: 2016 - 2018
       items:
         <b>Mentor</b> - <a href="https://www.mentorink.com/tev" target="_blank">Mentorink</a>
@@ -99,6 +96,9 @@
 - title: Awards & Honours
   type: time_table
   contents:
+    - year: 2024
+      items: 
+        <b>Poster Presentation Winner</b> - Festival of Genomics & Biodata, London, UK
     - year: 2022
       items: 
         <b>Translational Researcher Programme</b> - 10X Genomics, Inc., Singapore
