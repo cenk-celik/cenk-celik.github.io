@@ -29,3 +29,7 @@
 "Springer":
   url: https://link.springer.com
   color: "#0C2757"
+
+"eLife":
+  url: https://elifesciences.org
+  color: "#c30010"
