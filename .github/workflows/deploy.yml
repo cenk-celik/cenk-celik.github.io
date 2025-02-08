@@ -20,8 +20,7 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: '3.2.1'
-    - name: Enable bundler cache
-      uses: actions/cache@v3
+        bundler-cache: true
     - name: Update Bundler
       run: gem install bundler
     - name: Install deps
