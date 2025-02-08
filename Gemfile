@@ -17,6 +17,7 @@ group :jekyll_plugins do
     gem 'mini_racer'
     gem 'unicode_utils'
     gem 'webrick'
+    gem 'uri', '1.0.2'
     gem 'bundler', '>= 2.2.17'
         
 end
