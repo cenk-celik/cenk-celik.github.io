@@ -1,7 +1,7 @@
 ---
 layout: post
-date: 2024-05-20 10:11:00-0400
+date: 2025-05-30 10:11:00-0400
 inline: true
 ---
 
-Our latest work in [Thibault Lab](http://www.thibaultlab.com), Singapore is now out on [eLife](https://elifesciences.org/articles/95113).
+We’re thrilled to introduce [EnrichMap: Spatially informed enrichment analysis for functional interpretation of spatial transcriptomics](https://doi.org/10.1101/2025.05.30.656960)
