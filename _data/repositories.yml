@@ -2,7 +2,5 @@ github_users:
   - cenk-celik
 
 github_repos:
-  - cenk-celik/c_elegans_rnaseq
-  - cenk-celik/cold-shock
-  - cenk-celik/rosalind_solutions
-  - cenk-celik/jhu_gdsc
+  - secrierlab/EnrichMap
+  - secrierlab/G0-breast-cancer-atlas
