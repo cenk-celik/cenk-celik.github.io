@@ -2,6 +2,10 @@
   url: https://www.nature.com/ncomms/
   color: "#D44431"
 
+"Mol Oncol":
+  url: https://febs.onlinelibrary.wiley.com/journal/18780261
+  color: "#0894C7"
+
 "Prog Lipid Res":
   url: https://www.sciencedirect.com/journal/progress-in-lipid-research
   color: "#555CA2"
