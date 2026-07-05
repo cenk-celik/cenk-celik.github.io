@@ -71,8 +71,14 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
   }
 
   .wordmark-logo {
+    /* Explicit, definite width (not auto) and max-width: none override the
+       global `svg { max-width: 100% }` reset, which combined with an
+       intrinsic-ratio auto-width can collapse a flex-item SVG to zero width
+       in some browsers/builds - this was the actual cause of the missing
+       logo, not a caching issue. */
+    width: 1.6rem;
     height: 1.5rem;
-    width: auto;
+    max-width: none;
     flex-shrink: 0;
   }
 
