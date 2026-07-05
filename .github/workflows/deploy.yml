@@ -45,8 +45,24 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment_url.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
-        id: deployment
+        id: deployment_primary
+        continue-on-error: true
         uses: actions/deploy-pages@v5
+
+      - name: Retry GitHub Pages deployment
+        id: deployment_retry
+        if: steps.deployment_primary.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+
+      - name: Resolve deployed page URL
+        id: deployment_url
+        if: always()
+        env:
+          PRIMARY_PAGE_URL: ${{ steps.deployment_primary.outputs.page_url }}
+          RETRY_PAGE_URL: ${{ steps.deployment_retry.outputs.page_url }}
+        run: |
+          page_url="${PRIMARY_PAGE_URL:-$RETRY_PAGE_URL}"
+          echo "page_url=$page_url" >> "$GITHUB_OUTPUT"
