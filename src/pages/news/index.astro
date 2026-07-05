@@ -11,7 +11,7 @@ const news = await getSortedNews();
 <BaseLayout title="News" description="Updates on publications, preprints and collaborations.">
   <section>
     <div class="container">
-      <SectionHeading eyebrow="News" title="News" />
+      <SectionHeading title="News" />
       <div class="news-list">
         {
           news.map(async (item) => {

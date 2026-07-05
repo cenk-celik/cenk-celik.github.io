@@ -4,7 +4,7 @@ year: 2025
 organisation: Bilimler Köyü (Village of Sciences)
 location: Foça, İzmir, Turkey
 status: past
-link: https://bilimler.org
+link: https://bilimler.org/etkinlikler/biyoinformatik/125/
 linkLabel: Bilimler Köyü (Turkish)
 ---
 
