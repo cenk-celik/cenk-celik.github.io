@@ -36,6 +36,10 @@ def infer_type(venue: str) -> str:
     v = (venue or "").lower()
     if "biorxiv" in v or "medrxiv" in v or "preprint" in v:
         return "preprint"
+    if "abstract" in v or "meeting" in v or "conference" in v or "symposium" in v:
+        return "abstract"
+    if "protocol" in v:
+        return "protocol"
     return "journal"
 
 

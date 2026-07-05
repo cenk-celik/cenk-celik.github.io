@@ -4,7 +4,7 @@ import SectionHeading from '../../components/SectionHeading.astro';
 import PublicationCard from '../../components/PublicationCard.astro';
 import { getPublications, getPublicationMetrics, formatMonthYear } from '../../lib/content';
 
-const publications = getPublications();
+const publications = getPublications().filter((pub) => pub.type !== 'abstract' && pub.type !== 'protocol');
 const metrics = getPublicationMetrics();
 ---
 
