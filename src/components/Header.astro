@@ -1,6 +1,7 @@
 ---
 import { site } from '../data/site';
 import ThemeToggle from './ThemeToggle.astro';
+import Logo from './Logo.astro';
 
 const path = Astro.url.pathname;
 const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
@@ -8,7 +9,10 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
 
 <header class="site-header">
   <div class="container header-inner">
-    <a href="/" class="wordmark">{site.name}</a>
+    <a href="/" class="wordmark">
+      <Logo class="wordmark-logo" />
+      <span>{site.name}</span>
+    </a>
 
     <button id="nav-toggle" class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
       <span class="visually-hidden">Toggle navigation</span>
@@ -53,12 +57,21 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
   }
 
   .wordmark {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     font-family: var(--font-serif);
     font-size: var(--step-1);
     font-weight: 600;
     text-decoration: none;
     color: var(--color-text);
     letter-spacing: -0.01em;
+  }
+
+  .wordmark-logo {
+    height: 1.5rem;
+    width: auto;
+    flex-shrink: 0;
   }
 
   .site-nav {
