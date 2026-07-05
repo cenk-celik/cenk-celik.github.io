@@ -25,12 +25,11 @@ const typeLabel: Record<Publication['type'], string> = {
       <a href={pub.url} target="_blank" rel="noopener noreferrer">{pub.title}</a>
     </h3>
     <p class="pub-authors">
-      {pub.authors.map((a, i) => (
-        <>
-          <span class:list={{ 'is-author': a.replace(/[ÇC]elik/, 'Celik').includes('Celik') }}>{a}</span>
-          {i < pub.authors.length - 1 ? ', ' : ''}
-        </>
-      ))}
+      {pub.authors.map((a, i) => {
+        const isMe = a.replace(/[ÇC]elik/, 'Celik').includes('Celik');
+        const sep = i < pub.authors.length - 1 ? ', ' : '';
+        return isMe ? <><span class="is-author">{a}</span>{sep}</> : `${a}${sep}`;
+      })}
     </p>
     <p class="pub-venue">
       <span class="tag">{typeLabel[pub.type]}</span>

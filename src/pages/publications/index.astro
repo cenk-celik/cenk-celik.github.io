@@ -6,14 +6,6 @@ import { getPublications, getPublicationMetrics, formatMonthYear } from '../../l
 
 const publications = getPublications();
 const metrics = getPublicationMetrics();
-
-const byYear = new Map<number, typeof publications>();
-for (const pub of publications) {
-  const list = byYear.get(pub.year) ?? [];
-  list.push(pub);
-  byYear.set(pub.year, list);
-}
-const years = [...byYear.keys()].sort((a, b) => b - a);
 ---
 
 <BaseLayout title="Publications" description="Journal articles, reviews, book chapters and preprints, sorted by year.">
@@ -39,19 +31,12 @@ const years = [...byYear.keys()].sort((a, b) => b - a);
         </a>
       </div>
       <p class="metrics-note">
-        Synced automatically from Google Scholar · last checked {formatMonthYear(new Date(metrics.updated))}
+        Last updated {formatMonthYear(new Date(metrics.updated))}
       </p>
 
-      {
-        years.map((year) => (
-          <div class="year-group">
-            <h2 class="year-heading">{year}</h2>
-            <div class="pub-list">
-              {byYear.get(year)!.map((pub) => <PublicationCard pub={pub} />)}
-            </div>
-          </div>
-        ))
-      }
+      <div class="pub-list">
+        {publications.map((pub) => <PublicationCard pub={pub} />)}
+      </div>
     </div>
   </section>
 </BaseLayout>
@@ -103,20 +88,6 @@ const years = [...byYear.keys()].sort((a, b) => b - a);
     font-size: var(--step--1);
     color: var(--color-text-faint);
     margin-bottom: var(--space-8);
-  }
-
-  .year-heading {
-    font-family: var(--font-sans);
-    font-size: var(--step--1);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-text-faint);
-    margin-bottom: 0;
-  }
-
-  .year-group + .year-group {
-    margin-top: var(--space-6);
   }
 
   @media (max-width: 640px) {

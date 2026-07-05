@@ -129,11 +129,11 @@ ul, ol {
 }
 
 section {
-  padding-block: var(--space-9);
+  padding-block: var(--space-8);
 }
 
 @media (max-width: 640px) {
-  section { padding-block: var(--space-7); }
+  section { padding-block: var(--space-6); }
 }
 
 .section-inner + .section-inner {

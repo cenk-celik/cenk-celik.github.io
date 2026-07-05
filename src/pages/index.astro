@@ -3,13 +3,11 @@ import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import PublicationCard from '../components/PublicationCard.astro';
-import NewsItem from '../components/NewsItem.astro';
 import BlueskyPost from '../components/BlueskyPost.astro';
 import SocialIcons from '../components/SocialIcons.astro';
 import { getCollection, render } from 'astro:content';
 import {
   getSortedResearch,
-  getSortedNews,
   getFeaturedPublications,
   getBlueskyPosts,
 } from '../lib/content';
@@ -20,7 +18,6 @@ const [bioEntry] = await getCollection('bio');
 const { Content: BioContent } = await render(bioEntry);
 
 const research = await getSortedResearch();
-const news = (await getSortedNews()).slice(0, 4);
 const featuredPubs = getFeaturedPublications();
 const bluesky = getBlueskyPosts(3);
 ---
@@ -28,7 +25,7 @@ const bluesky = getBlueskyPosts(3);
 <BaseLayout title={site.name}>
   <section class="hero">
     <div class="container hero-inner">
-      <Image src={profileImage} alt={site.name} width={128} height={128} class="hero-photo" />
+      <Image src={profileImage} alt={site.name} width={176} height={176} class="hero-photo" />
       <div class="hero-text">
         <h1>{site.name}</h1>
         <p class="hero-role">{site.role} at {site.institution}</p>
@@ -48,7 +45,7 @@ const bluesky = getBlueskyPosts(3);
 
   <section class="bio-section">
     <div class="container">
-      <div class="prose">
+      <div class="prose bio-prose">
         <BioContent />
       </div>
     </div>
@@ -77,25 +74,6 @@ const bluesky = getBlueskyPosts(3);
         {featuredPubs.map((pub) => <PublicationCard pub={pub} compact />)}
       </div>
       <a class="text-link" href="/publications">View all publications →</a>
-    </div>
-  </section>
-
-  <section class="news-teaser">
-    <div class="container">
-      <SectionHeading eyebrow="News" title="Recent updates" />
-      <div class="news-list">
-        {
-          news.map(async (item) => {
-            const { Content } = await render(item);
-            return (
-              <NewsItem date={item.data.date}>
-                <Content />
-              </NewsItem>
-            );
-          })
-        }
-      </div>
-      <a class="text-link" href="/news">All news →</a>
     </div>
   </section>
 
@@ -135,8 +113,8 @@ const bluesky = getBlueskyPosts(3);
   }
 
   .hero-photo {
-    width: 8rem;
-    height: 8rem;
+    width: 11rem;
+    height: 11rem;
     border-radius: var(--radius-lg);
     object-fit: cover;
     flex-shrink: 0;
@@ -215,8 +193,11 @@ const bluesky = getBlueskyPosts(3);
     text-decoration: underline;
   }
 
-  .pub-list,
-  .news-list {
+  .pub-list {
+    max-width: var(--measure-wide);
+  }
+
+  .bio-prose {
     max-width: var(--measure-wide);
   }
 
@@ -238,8 +219,8 @@ const bluesky = getBlueskyPosts(3);
     }
 
     .hero-photo {
-      width: 5.5rem;
-      height: 5.5rem;
+      width: 7rem;
+      height: 7rem;
     }
   }
 </style>

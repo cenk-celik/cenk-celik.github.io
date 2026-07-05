@@ -12,6 +12,7 @@ building from the last known-good data ("keep-last-good").
 
 Run manually with: python scripts/fetch_publications.py
 """
+
 from __future__ import annotations
 
 import datetime
@@ -42,14 +43,22 @@ def main() -> int:
     try:
         from scholarly import scholarly
     except ImportError:
-        print("scholarly is not installed (pip install -r scripts/requirements.txt); skipping.", file=sys.stderr)
+        print(
+            "scholarly is not installed (pip install -r scripts/requirements.txt); skipping.",
+            file=sys.stderr,
+        )
         return 0
 
     try:
         author_stub = scholarly.search_author_id(SCHOLAR_ID)
-        author = scholarly.fill(author_stub, sections=["publications", "basics", "indices"])
+        author = scholarly.fill(
+            author_stub, sections=["publications", "basics", "indices"]
+        )
     except Exception as exc:  # noqa: BLE001 - Scholar's failure modes are varied and unpredictable
-        print(f"Could not reach Google Scholar this run ({exc}); keeping existing data.", file=sys.stderr)
+        print(
+            f"Could not reach Google Scholar this run ({exc}); keeping existing data.",
+            file=sys.stderr,
+        )
         return 0
 
     existing = []
@@ -64,7 +73,10 @@ def main() -> int:
         try:
             filled = scholarly.fill(pub)
         except Exception as exc:  # noqa: BLE001
-            print(f"Skipping one publication after a fetch error ({exc}).", file=sys.stderr)
+            print(
+                f"Skipping one publication after a fetch error ({exc}).",
+                file=sys.stderr,
+            )
             continue
 
         bib = filled.get("bib", {})
@@ -79,7 +91,11 @@ def main() -> int:
         year_raw = bib.get("pub_year")
         year = int(year_raw) if year_raw else prior.get("year", 0)
         venue = bib.get("citation") or bib.get("venue") or prior.get("venue", "")
-        authors = bib.get("author", "").split(" and ") if bib.get("author") else prior.get("authors", [])
+        authors = (
+            bib.get("author", "").split(" and ")
+            if bib.get("author")
+            else prior.get("authors", [])
+        )
 
         entry = {
             "id": prior.get("id", key),
@@ -92,7 +108,9 @@ def main() -> int:
             # human (or a previous run) has set them, leave them alone.
             "type": prior.get("type", infer_type(venue)),
             "doi": prior.get("doi"),
-            "url": prior.get("url") or filled.get("pub_url") or f"https://scholar.google.com/citations?user={SCHOLAR_ID}",
+            "url": prior.get("url")
+            or filled.get("pub_url")
+            or f"https://scholar.google.com/citations?user={SCHOLAR_ID}",
             "pubmedUrl": prior.get("pubmedUrl"),
             "preprintUrl": prior.get("preprintUrl"),
             "citations": filled.get("num_citations", prior.get("citations", 0)),
@@ -109,11 +127,18 @@ def main() -> int:
             merged.append(prior)
 
     if not merged:
-        print("Scholar returned no publications this run; keeping existing file untouched.", file=sys.stderr)
+        print(
+            "Scholar returned no publications this run; keeping existing file untouched.",
+            file=sys.stderr,
+        )
         return 0
 
-    merged.sort(key=lambda p: (p.get("year") or 0, p.get("citations") or 0), reverse=True)
-    PUB_PATH.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    merged.sort(
+        key=lambda p: (p.get("year") or 0, p.get("citations") or 0), reverse=True
+    )
+    PUB_PATH.write_text(
+        json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
 
     metrics = {
         "citations": author.get("citedby", 0),

@@ -57,7 +57,6 @@ export const site = {
     { label: 'Teaching', href: '/teaching' },
     { label: 'Software', href: '/software' },
     { label: 'News', href: '/news' },
-    { label: 'CV', href: '/cv.pdf' },
   ],
 
   bluesky: {
