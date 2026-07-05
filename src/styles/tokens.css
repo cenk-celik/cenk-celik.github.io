@@ -1,0 +1,99 @@
+/*
+  Design tokens
+  A warm, minimal palette in the spirit of the brief: dark by default,
+  one restrained accent, real typographic hierarchy instead of colour
+  or ornament. Everything below is a CSS custom property so the whole
+  site can be retheme'd by editing this single file.
+*/
+
+:root {
+  /* ---- Type ---- */
+  --font-sans: 'InterVariable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'NewsreaderVariable', 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'ui-monospace', 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Fluid type scale */
+  --step--1: clamp(0.8rem, 0.78rem + 0.1vw, 0.875rem);
+  --step-0: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --step-1: clamp(1.125rem, 1.08rem + 0.25vw, 1.25rem);
+  --step-2: clamp(1.375rem, 1.28rem + 0.5vw, 1.625rem);
+  --step-3: clamp(1.75rem, 1.55rem + 1vw, 2.25rem);
+  --step-4: clamp(2.25rem, 1.9rem + 1.75vw, 3.25rem);
+  --step-5: clamp(2.75rem, 2.15rem + 3vw, 4.5rem);
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.4;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.75;
+
+  /* ---- Spacing (8px base) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+
+  /* ---- Layout ---- */
+  --measure-prose: 40rem;   /* reading column */
+  --measure-wide: 68rem;    /* grids, cards */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --border-width: 1px;
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 420ms;
+}
+
+/* ---- Colour: dark (default) ---- */
+:root,
+[data-theme='dark'] {
+  --color-bg: #0d0c0b;
+  --color-bg-elevated: #171513;
+  --color-bg-hover: #1e1b18;
+  --color-text: #ece7e2;
+  --color-text-muted: #a39b92;
+  --color-text-faint: #6f675f;
+  --color-border: #2a2724;
+  --color-border-strong: #3a3632;
+  --color-accent: #d98a6c;
+  --color-accent-strong: #e8a688;
+  --color-accent-text: #1a1310;
+  --color-tag-bg: #201b17;
+  --color-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+/* ---- Colour: light ---- */
+[data-theme='light'] {
+  --color-bg: #faf8f6;
+  --color-bg-elevated: #ffffff;
+  --color-bg-hover: #f1ede9;
+  --color-text: #201c19;
+  --color-text-muted: #5c554d;
+  --color-text-faint: #8a8177;
+  --color-border: #e7e0d9;
+  --color-border-strong: #d8cfc5;
+  --color-accent: #b35c3c;
+  --color-accent-strong: #8f4830;
+  --color-accent-text: #fff9f6;
+  --color-tag-bg: #f3ece4;
+  --color-shadow: 0 8px 30px rgba(30, 20, 10, 0.08);
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

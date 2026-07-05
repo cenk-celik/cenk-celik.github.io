@@ -1,0 +1,166 @@
+---
+import type { Publication } from '../lib/content';
+
+interface Props {
+  pub: Publication;
+  compact?: boolean;
+}
+
+const { pub, compact = false } = Astro.props;
+
+const typeLabel: Record<Publication['type'], string> = {
+  journal: 'Journal article',
+  review: 'Review',
+  preprint: 'Preprint',
+  'book-chapter': 'Book chapter',
+  protocol: 'Protocol',
+  abstract: 'Conference abstract',
+};
+---
+
+<article class:list={['pub-card', { compact }]}>
+  <div class="pub-year" aria-hidden="true">{pub.year}</div>
+  <div class="pub-body">
+    <h3 class="pub-title">
+      <a href={pub.url} target="_blank" rel="noopener noreferrer">{pub.title}</a>
+    </h3>
+    <p class="pub-authors">
+      {pub.authors.map((a, i) => (
+        <>
+          <span class:list={{ 'is-author': a.replace(/[ÇC]elik/, 'Celik').includes('Celik') }}>{a}</span>
+          {i < pub.authors.length - 1 ? ', ' : ''}
+        </>
+      ))}
+    </p>
+    <p class="pub-venue">
+      <span class="tag">{typeLabel[pub.type]}</span>
+      <span class="venue-name">{pub.venue}</span>
+      {pub.citations ? <span class="citations">· {pub.citations} citation{pub.citations === 1 ? '' : 's'}</span> : null}
+    </p>
+    {
+      !compact && (
+        <div class="pub-links">
+          {pub.doi && (
+            <a class="pub-link" href={pub.url} target="_blank" rel="noopener noreferrer">
+              DOI ↗
+            </a>
+          )}
+          {pub.pubmedUrl && (
+            <a class="pub-link" href={pub.pubmedUrl} target="_blank" rel="noopener noreferrer">
+              PubMed ↗
+            </a>
+          )}
+          {pub.preprintUrl && (
+            <a class="pub-link" href={pub.preprintUrl} target="_blank" rel="noopener noreferrer">
+              Preprint ↗
+            </a>
+          )}
+        </div>
+      )
+    }
+  </div>
+</article>
+
+<style>
+  .pub-card {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+    gap: var(--space-5);
+    padding-block: var(--space-6);
+  }
+
+  .pub-card + .pub-card {
+    border-top: var(--border-width) solid var(--color-border);
+  }
+
+  .pub-year {
+    font-family: var(--font-serif);
+    font-size: var(--step-2);
+    color: var(--color-text-faint);
+    padding-top: 0.15em;
+  }
+
+  .pub-title {
+    font-size: var(--step-1);
+    margin: 0 0 var(--space-2);
+  }
+
+  .pub-title a {
+    text-decoration: none;
+    color: var(--color-text);
+    background-image: linear-gradient(var(--color-accent), var(--color-accent));
+    background-repeat: no-repeat;
+    background-size: 0% 1.5px;
+    background-position: 0 100%;
+    transition: background-size var(--duration-base) var(--ease);
+  }
+
+  .pub-title a:hover {
+    background-size: 100% 1.5px;
+  }
+
+  .pub-authors {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-2);
+  }
+
+  .pub-authors .is-author {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .pub-venue {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .venue-name {
+    font-style: italic;
+  }
+
+  .citations {
+    color: var(--color-text-faint);
+  }
+
+  .pub-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+  }
+
+  .pub-link {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .pub-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 560px) {
+    .pub-card {
+      grid-template-columns: 1fr;
+      gap: var(--space-2);
+    }
+
+    .pub-year {
+      font-size: var(--step--1);
+      font-family: var(--font-sans);
+      font-weight: 700;
+      color: var(--color-accent);
+      padding-top: 0;
+    }
+  }
+</style>

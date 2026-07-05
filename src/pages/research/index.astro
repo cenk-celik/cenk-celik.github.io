@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import ResearchCard from '../../components/ResearchCard.astro';
+import { getSortedResearch } from '../../lib/content';
+import { render } from 'astro:content';
+
+const research = await getSortedResearch();
+---
+
+<BaseLayout
+  title="Research"
+  description="Cellular quiescence, single-cell and spatial transcriptomics, the tumour microenvironment and computational method development."
+>
+  <section>
+    <div class="container">
+      <SectionHeading
+        eyebrow="Research"
+        title="Research programme"
+        description="My work sits at the interface of cancer cell biology and computational method development, centred on one question: what governs the switch between dormant and proliferative cell states, and how is that switch organised in space within a tumour."
+      />
+      <div class="research-grid">
+        {
+          research.map(async (theme) => {
+            const { Content } = await render(theme);
+            return (
+              <ResearchCard title={theme.data.title} href={theme.id}>
+                <Content />
+              </ResearchCard>
+            );
+          })
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .research-grid {
+    display: grid;
+    gap: var(--space-5);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  }
+</style>

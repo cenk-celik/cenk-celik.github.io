@@ -1,0 +1,94 @@
+---
+import type { BlueskyPostData } from '../lib/content';
+import { relativeTime } from '../lib/content';
+
+interface Props {
+  post: BlueskyPostData;
+}
+
+const { post } = Astro.props;
+---
+
+<article class="bsky-post">
+  {post.repostOf && <p class="bsky-repost">↻ Reposted from {post.repostOf}</p>}
+  <p class="bsky-text">{post.text}</p>
+  {
+    post.images?.length > 0 && (
+      <div class="bsky-images">
+        {post.images.slice(0, 1).map((img) => (
+          <img src={img.url} alt={img.alt || ''} loading="lazy" />
+        ))}
+      </div>
+    )
+  }
+  <div class="bsky-meta">
+    <a href={post.url} target="_blank" rel="noopener noreferrer" class="bsky-time">
+      {relativeTime(post.createdAt)}
+    </a>
+    <span class="bsky-stats">
+      {post.likeCount > 0 && <span>♥ {post.likeCount}</span>}
+      {post.repostCount > 0 && <span>⟲ {post.repostCount}</span>}
+    </span>
+  </div>
+</article>
+
+<style>
+  .bsky-post {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    height: 100%;
+  }
+
+  .bsky-repost {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-faint);
+    margin: 0;
+  }
+
+  .bsky-text {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    line-height: var(--leading-normal);
+    color: var(--color-text);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .bsky-images img {
+    border-radius: var(--radius-md);
+    border: var(--border-width) solid var(--color-border);
+    max-height: 10rem;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .bsky-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-faint);
+  }
+
+  .bsky-time {
+    color: var(--color-text-faint);
+    text-decoration: none;
+  }
+
+  .bsky-time:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+
+  .bsky-stats {
+    display: flex;
+    gap: var(--space-3);
+  }
+</style>

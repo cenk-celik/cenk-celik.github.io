@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cenk-celik.github.io/sitemap-index.xml

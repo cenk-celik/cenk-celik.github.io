@@ -1,0 +1,22 @@
+{
+  "secrierlab/EnrichMap": {
+    "name": "EnrichMap",
+    "fullName": "secrierlab/EnrichMap",
+    "description": "Spatially-informed enrichment analysis for functional interpretation of spatial transcriptomics.",
+    "url": "https://github.com/secrierlab/EnrichMap",
+    "stars": 15,
+    "language": "Python",
+    "updatedAt": "2026-06-26T22:54:54Z",
+    "topics": ["geneset-enrichment", "spatial-transcriptomics"]
+  },
+  "secrierlab/G0-breast-cancer-atlas": {
+    "name": "G0-breast-cancer-atlas",
+    "fullName": "secrierlab/G0-breast-cancer-atlas",
+    "description": "G0 breast cancer atlas: single-cell and spatial data underlying the quiescence/proliferation compartmentalisation study.",
+    "url": "https://github.com/secrierlab/G0-breast-cancer-atlas",
+    "stars": 3,
+    "language": "Jupyter Notebook",
+    "updatedAt": "2026-06-29T15:59:26Z",
+    "topics": ["breast-cancer", "g0-arrest", "quiescence", "single-cell-rna-seq", "spatial-transcriptomics"]
+  }
+}

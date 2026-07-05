@@ -1,0 +1,166 @@
+---
+import { site } from '../data/site';
+import ThemeToggle from './ThemeToggle.astro';
+
+const path = Astro.url.pathname;
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+---
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="wordmark">{site.name}</a>
+
+    <button id="nav-toggle" class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span class="visually-hidden">Toggle navigation</span>
+      <span class="nav-toggle-bar"></span>
+      <span class="nav-toggle-bar"></span>
+      <span class="nav-toggle-bar"></span>
+    </button>
+
+    <nav id="site-nav" class="site-nav">
+      <ul>
+        {
+          site.nav.map((item) => (
+            <li>
+              <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <ThemeToggle />
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: var(--space-4);
+    gap: var(--space-4);
+  }
+
+  .wordmark {
+    font-family: var(--font-serif);
+    font-size: var(--step-1);
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+  }
+
+  .site-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .site-nav ul {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-nav a {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--color-text-muted);
+    padding-block: var(--space-2);
+    border-bottom: 2px solid transparent;
+    transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+  }
+
+  .site-nav a:hover {
+    color: var(--color-text);
+  }
+
+  .site-nav a[aria-current='page'] {
+    color: var(--color-text);
+    border-color: var(--color-accent);
+  }
+
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-md);
+    border: var(--border-width) solid var(--color-border);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .nav-toggle-bar {
+    width: 1.1rem;
+    height: 1.5px;
+    background: var(--color-text);
+    transition: transform var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease);
+  }
+
+  @media (max-width: 720px) {
+    .nav-toggle {
+      display: inline-flex;
+    }
+
+    .site-nav {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      background: var(--color-bg);
+      border-bottom: var(--border-width) solid var(--color-border);
+      padding: var(--space-5);
+      display: none;
+      gap: var(--space-5);
+    }
+
+    .site-nav.is-open {
+      display: flex;
+    }
+
+    .site-nav ul {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-4);
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.getElementById('site-nav');
+
+  toggle?.addEventListener('click', () => {
+    const isOpen = nav?.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
+  });
+
+  nav?.addEventListener('click', (event) => {
+    if ((event.target as HTMLElement).tagName === 'A') {
+      nav.classList.remove('is-open');
+      toggle?.setAttribute('aria-expanded', 'false');
+    }
+  });
+</script>

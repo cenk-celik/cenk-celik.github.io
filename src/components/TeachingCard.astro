@@ -1,0 +1,110 @@
+---
+interface Props {
+  title: string;
+  year: number;
+  organisation: string;
+  location?: string;
+  status: 'upcoming' | 'past';
+  link?: string;
+  linkLabel?: string;
+}
+
+const { title, year, organisation, location, status, link, linkLabel } = Astro.props;
+---
+
+<article class="teaching-card">
+  <div class="teaching-year">
+    <span>{year}</span>
+    {status === 'upcoming' && <span class="tag tag-upcoming">Upcoming</span>}
+  </div>
+  <div class="teaching-body">
+    <h3>{title}</h3>
+    <p class="teaching-meta">{organisation}{location ? ` · ${location}` : ''}</p>
+    <div class="teaching-desc prose">
+      <slot />
+    </div>
+    {
+      link && (
+        <a class="teaching-link" href={link} target="_blank" rel="noopener noreferrer">
+          {linkLabel ?? 'More information'} ↗
+        </a>
+      )
+    }
+  </div>
+</article>
+
+<style>
+  .teaching-card {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: var(--space-5);
+    padding-block: var(--space-6);
+  }
+
+  .teaching-card + .teaching-card {
+    border-top: var(--border-width) solid var(--color-border);
+  }
+
+  .teaching-year {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-family: var(--font-serif);
+    font-size: var(--step-2);
+    color: var(--color-text-faint);
+  }
+
+  .tag-upcoming {
+    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+    color: var(--color-accent);
+    border-color: transparent;
+  }
+
+  .teaching-body h3 {
+    font-size: var(--step-1);
+    margin-bottom: var(--space-2);
+  }
+
+  .teaching-meta {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-3);
+  }
+
+  .teaching-desc {
+    font-size: var(--step-0);
+    color: var(--color-text-muted);
+    max-width: none;
+    margin-bottom: var(--space-3);
+  }
+
+  .teaching-link {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .teaching-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 560px) {
+    .teaching-card {
+      grid-template-columns: 1fr;
+      gap: var(--space-2);
+    }
+
+    .teaching-year {
+      flex-direction: row;
+      align-items: center;
+      font-size: var(--step--1);
+      font-family: var(--font-sans);
+      font-weight: 700;
+      color: var(--color-accent);
+    }
+  }
+</style>

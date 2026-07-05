@@ -1,0 +1,43 @@
+{
+  "fetchedAt": "2026-07-05T00:00:00.000Z",
+  "posts": [
+    {
+      "uri": "at://did:plc:jit67mohiztnqmcygnvwtmy5/app.bsky.feed.post/3mo3lgy4rxs2q",
+      "url": "https://bsky.app/profile/cenkcelik.bsky.social/post/3mo3lgy4rxs2q",
+      "text": "Are you interested in learning multiomics analysis for your project? Join me for a hands-on workshop at Bilimler Köyü (Village of Sciences) in Foça, İzmir for a week. #spatialtranscriptomics #scrnaseq",
+      "createdAt": "2026-06-12T10:58:04.546Z",
+      "likeCount": 1,
+      "repostCount": 1,
+      "images": [
+        {
+          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:jit67mohiztnqmcygnvwtmy5/bafkreifee6ts6adejsa4fptew5jhjeu7zrbfze4ftsvxab63bafx6fejri",
+          "alt": "Life at the single-cell and spatial resolution."
+        }
+      ]
+    },
+    {
+      "uri": "at://did:plc:jit67mohiztnqmcygnvwtmy5/app.bsky.feed.post/3mo3lhqohl22q",
+      "url": "https://bsky.app/profile/cenkcelik.bsky.social/post/3mo3lhqohl22q",
+      "text": "Find more information on bilimler.org/etkinlikler/... or message me!",
+      "createdAt": "2026-06-12T10:58:04.547Z",
+      "likeCount": 0,
+      "repostCount": 0,
+      "images": []
+    },
+    {
+      "uri": "at://did:plc:7ghsnkozwvndecx7foulnwpl/app.bsky.feed.post/3mncnnnyi5y2e",
+      "url": "https://bsky.app/profile/biochemsoc.bsky.social/post/3mncnnnyi5y2e",
+      "text": "G0 or no-G0, if you're interested in learning the role of phosphatases in regulating quiescence and cell cycle entry read this new review by Robinson & Barr published in #BiochemSocTrans https://doi.org/10.1042/BST20250091 🧪",
+      "createdAt": "2026-06-02T13:01:02.148Z",
+      "likeCount": 7,
+      "repostCount": 2,
+      "images": [
+        {
+          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:7ghsnkozwvndecx7foulnwpl/bafkreid3uwdnhutztw6vcpdmhfhcy2ezyrod6jek6ok53d7haw4qnvd6tu",
+          "alt": "Overview of phosphatases controlling G0 entry, maintenance, and exit towards G1/S"
+        }
+      ],
+      "repostOf": "Biochemical Society"
+    }
+  ]
+}

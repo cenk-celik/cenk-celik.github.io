@@ -1,0 +1,17 @@
+---
+// The CV is just the PDF — this route exists only so any old /cv links
+// (or anyone typing it in) land somewhere useful instead of a 404.
+import { site } from '../../data/site';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content={`0; url=${site.cvPdf}`} />
+    <link rel="canonical" href={site.cvPdf} />
+    <title>CV · {site.name}</title>
+  </head>
+  <body>
+    <p>Redirecting to the <a href={site.cvPdf}>CV (PDF)</a>…</p>
+  </body>
+</html>

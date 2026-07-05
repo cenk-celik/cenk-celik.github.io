@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import TeachingCard from '../../components/TeachingCard.astro';
+import { getSortedTeaching } from '../../lib/content';
+import { render } from 'astro:content';
+
+const teaching = await getSortedTeaching();
+---
+
+<BaseLayout title="Teaching" description="Courses and workshops on single-cell and spatial data analysis.">
+  <section>
+    <div class="container">
+      <SectionHeading
+        eyebrow="Teaching"
+        title="Teaching & workshops"
+        description="Hands-on courses in computational biology, taught mainly through Bilimler Köyü (Village of Sciences), a volunteer initiative bringing STEMM training to young people from underrepresented regions of Turkey."
+      />
+      <div class="teaching-list">
+        {
+          teaching.map(async (course) => {
+            const { Content } = await render(course);
+            return (
+              <TeachingCard
+                title={course.data.title}
+                year={course.data.year}
+                organisation={course.data.organisation}
+                location={course.data.location}
+                status={course.data.status}
+                link={course.data.link}
+                linkLabel={course.data.linkLabel}
+              >
+                <Content />
+              </TeachingCard>
+            );
+          })
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .teaching-list {
+    max-width: var(--measure-wide);
+  }
+</style>

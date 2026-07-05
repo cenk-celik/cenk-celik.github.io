@@ -1,11 +1,23 @@
-_site
-.bundle
-.sass-cache
-.jekyll-cache
-.jekyll-metadata
-.DS_store
-.ruby-version
-.tweet-cache
-Gemfile.lock
-vendor
+# build output
+dist/
+.astro/
 
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+
+# environment
+.env
+.env.production
+
+# editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# python (automation scripts)
+scripts/__pycache__/
+scripts/*.pyc
+.venv/

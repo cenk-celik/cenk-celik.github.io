@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import NewsItem from '../../components/NewsItem.astro';
+import { getSortedNews } from '../../lib/content';
+import { render } from 'astro:content';
+
+const news = await getSortedNews();
+---
+
+<BaseLayout title="News" description="Updates on publications, preprints and collaborations.">
+  <section>
+    <div class="container">
+      <SectionHeading eyebrow="News" title="News" />
+      <div class="news-list">
+        {
+          news.map(async (item) => {
+            const { Content } = await render(item);
+            return (
+              <NewsItem date={item.data.date}>
+                <Content />
+              </NewsItem>
+            );
+          })
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .news-list {
+    max-width: var(--measure-wide);
+  }
+</style>

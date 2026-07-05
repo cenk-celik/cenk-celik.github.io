@@ -1,0 +1,146 @@
+---
+import type { RepoEntry } from '../lib/content';
+import { relativeTime } from '../lib/content';
+
+interface Props {
+  repo: RepoEntry;
+}
+
+const { repo } = Astro.props;
+
+const languageColors: Record<string, string> = {
+  Python: '#3572A5',
+  R: '#198CE7',
+  JavaScript: '#f1e05a',
+  TypeScript: '#3178c6',
+  Shell: '#89e051',
+  'Jupyter Notebook': '#DA5B0B',
+};
+---
+
+<article class="repo-card">
+  <div class="repo-head">
+    <h3>
+      <a href={repo.url} target="_blank" rel="noopener noreferrer">{repo.name}</a>
+    </h3>
+    <span class="repo-stars" title={`${repo.stars} stars`}>
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="currentColor">
+        <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+      </svg>
+      {repo.stars}
+    </span>
+  </div>
+
+  {repo.highlight && <p class="repo-highlight">{repo.highlight}</p>}
+  {repo.description && <p class="repo-description">{repo.description}</p>}
+
+  <div class="repo-meta">
+    {
+      repo.language && (
+        <span class="repo-lang">
+          <span class="lang-dot" style={`background:${languageColors[repo.language] ?? 'var(--color-text-faint)'}`} />
+          {repo.language}
+        </span>
+      )
+    }
+    <span class="repo-updated">Updated {relativeTime(repo.updatedAt)}</span>
+  </div>
+
+  {
+    repo.topics?.length > 0 && (
+      <ul class="repo-topics">
+        {repo.topics.slice(0, 4).map((t) => (
+          <li class="tag">{t}</li>
+        ))}
+      </ul>
+    )
+  }
+</article>
+
+<style>
+  .repo-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .repo-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .repo-head h3 {
+    font-family: var(--font-mono);
+    font-size: var(--step-0);
+    margin: 0;
+  }
+
+  .repo-head a {
+    text-decoration: none;
+    color: var(--color-text);
+  }
+
+  .repo-head a:hover {
+    color: var(--color-accent);
+  }
+
+  .repo-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .repo-highlight {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--color-accent);
+    margin: 0;
+  }
+
+  .repo-description {
+    color: var(--color-text-muted);
+    font-size: var(--step--1);
+    margin: 0;
+  }
+
+  .repo-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-faint);
+    margin-top: auto;
+    padding-top: var(--space-2);
+  }
+
+  .repo-lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+
+  .lang-dot {
+    width: 0.6em;
+    height: 0.6em;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .repo-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+</style>

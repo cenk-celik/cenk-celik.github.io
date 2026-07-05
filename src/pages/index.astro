@@ -1,0 +1,245 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import PublicationCard from '../components/PublicationCard.astro';
+import NewsItem from '../components/NewsItem.astro';
+import BlueskyPost from '../components/BlueskyPost.astro';
+import SocialIcons from '../components/SocialIcons.astro';
+import { getCollection, render } from 'astro:content';
+import {
+  getSortedResearch,
+  getSortedNews,
+  getFeaturedPublications,
+  getBlueskyPosts,
+} from '../lib/content';
+import { site } from '../data/site';
+import profileImage from '../assets/profile.png';
+
+const [bioEntry] = await getCollection('bio');
+const { Content: BioContent } = await render(bioEntry);
+
+const research = await getSortedResearch();
+const news = (await getSortedNews()).slice(0, 4);
+const featuredPubs = getFeaturedPublications();
+const bluesky = getBlueskyPosts(3);
+---
+
+<BaseLayout title={site.name}>
+  <section class="hero">
+    <div class="container hero-inner">
+      <Image src={profileImage} alt={site.name} width={128} height={128} class="hero-photo" />
+      <div class="hero-text">
+        <h1>{site.name}</h1>
+        <p class="hero-role">{site.role} at {site.institution}</p>
+        <p class="hero-standfirst">
+          I study why cancer cells stop dividing, how they stay dormant, and what tips them back
+          towards growth — work that matters because that switch underlies treatment resistance
+          and relapse in solid tumours.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href={`mailto:${site.email}`}>Get in touch</a>
+          <a class="btn" href={site.cvPdf} download>Download CV ↓</a>
+        </div>
+        <SocialIcons class="hero-socials" />
+      </div>
+    </div>
+  </section>
+
+  <section class="bio-section">
+    <div class="container">
+      <div class="prose">
+        <BioContent />
+      </div>
+    </div>
+  </section>
+
+  <section class="research-teaser">
+    <div class="container">
+      <SectionHeading eyebrow="Research" title="What I work on" />
+      <ul class="theme-pills">
+        {
+          research.map((theme) => (
+            <li>
+              <a href={`/research#${theme.id}`}>{theme.data.title}</a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="text-link" href="/research">Explore the research programme →</a>
+    </div>
+  </section>
+
+  <section class="pubs-teaser">
+    <div class="container">
+      <SectionHeading eyebrow="Publications" title="Selected publications" />
+      <div class="pub-list">
+        {featuredPubs.map((pub) => <PublicationCard pub={pub} compact />)}
+      </div>
+      <a class="text-link" href="/publications">View all publications →</a>
+    </div>
+  </section>
+
+  <section class="news-teaser">
+    <div class="container">
+      <SectionHeading eyebrow="News" title="Recent updates" />
+      <div class="news-list">
+        {
+          news.map(async (item) => {
+            const { Content } = await render(item);
+            return (
+              <NewsItem date={item.data.date}>
+                <Content />
+              </NewsItem>
+            );
+          })
+        }
+      </div>
+      <a class="text-link" href="/news">All news →</a>
+    </div>
+  </section>
+
+  <section class="bluesky-teaser">
+    <div class="container">
+      <SectionHeading eyebrow="Elsewhere" title="Latest from Bluesky" />
+      {
+        bluesky.ok ? (
+          <div class="bsky-grid card-grid">
+            {bluesky.posts.map((post) => (
+              <div class="card">
+                <BlueskyPost post={post} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="bsky-fallback">
+            Couldn't load recent posts right now — you can find the latest updates directly on
+            {' '}
+            <a href={`https://bsky.app/profile/${site.bluesky.handle}`}>Bluesky</a>.
+          </p>
+        )
+      }
+      <a class="text-link" href={`https://bsky.app/profile/${site.bluesky.handle}`} target="_blank" rel="noopener noreferrer">
+        View more on Bluesky →
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-7);
+    padding-block: var(--space-9) var(--space-7);
+  }
+
+  .hero-photo {
+    width: 8rem;
+    height: 8rem;
+    border-radius: var(--radius-lg);
+    object-fit: cover;
+    flex-shrink: 0;
+    border: var(--border-width) solid var(--color-border);
+  }
+
+  .hero-text h1 {
+    margin-bottom: var(--space-2);
+  }
+
+  .hero-role {
+    font-family: var(--font-sans);
+    font-size: var(--step-0);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+  }
+
+  .hero-standfirst {
+    font-family: var(--font-serif);
+    font-size: var(--step-1);
+    color: var(--color-text);
+    max-width: 42rem;
+    line-height: var(--leading-relaxed);
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: var(--space-5) 0;
+  }
+
+  .bio-section {
+    padding-top: 0;
+  }
+
+  .theme-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0 0 var(--space-5);
+    padding: 0;
+  }
+
+  .theme-pills a {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    font-weight: 500;
+    padding: 0.55em 1em;
+    border-radius: 999px;
+    border: var(--border-width) solid var(--color-border);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: all var(--duration-fast) var(--ease);
+  }
+
+  .theme-pills a:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text);
+    background: var(--color-bg-hover);
+  }
+
+  .text-link {
+    display: inline-block;
+    margin-top: var(--space-5);
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .text-link:hover {
+    text-decoration: underline;
+  }
+
+  .pub-list,
+  .news-list {
+    max-width: var(--measure-wide);
+  }
+
+  .bsky-grid {
+    margin-bottom: var(--space-2);
+  }
+
+  .bsky-fallback {
+    color: var(--color-text-muted);
+    font-size: var(--step--1);
+  }
+
+  @media (max-width: 640px) {
+    .hero-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      padding-block: var(--space-7) var(--space-5);
+    }
+
+    .hero-photo {
+      width: 5.5rem;
+      height: 5.5rem;
+    }
+  }
+</style>

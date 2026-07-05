@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import RepoCard from '../../components/RepoCard.astro';
+import { getRepos } from '../../lib/content';
+import { site } from '../../data/site';
+
+const repos = getRepos();
+---
+
+<BaseLayout title="Software" description="Research software for spatial and single-cell transcriptomics analysis.">
+  <section>
+    <div class="container">
+      <SectionHeading
+        eyebrow="Software"
+        title="Software"
+        description="Open-source tools that come out of the research programme. Stats are pulled automatically from GitHub, so this list only needs a repository name added to update."
+      />
+      <div class="repo-grid card-grid">
+        {repos.map((repo) => (
+          <div class="card">
+            <RepoCard repo={repo} />
+          </div>
+        ))}
+      </div>
+      <p class="more-repos">
+        More on <a href={`https://github.com/${site.githubUsername}`} target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .repo-grid {
+    margin-bottom: var(--space-5);
+  }
+
+  .more-repos {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    color: var(--color-text-muted);
+  }
+
+  .more-repos a {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+</style>
