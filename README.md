@@ -156,4 +156,3 @@ No custom domain is configured — the site serves from `cenk-celik.github.io` a
 ## Known limitations
 
 - **Google Scholar sync is inherently a little fragile.** There's no official API; if Google blocks the scraper for a while, publications simply stop updating until it lets up again — nothing breaks, nothing needs fixing, it just catches up next run.
-- **A handful of facts were inferred or estimated** and are worth double-checking before you consider the migration final — see the flagged list in the project handover notes (EACR Ambassador start year, the exact 2024 "Art of ATGC" syllabus description, whether the 2026 Bilimler Köyü course should still read as "upcoming").
