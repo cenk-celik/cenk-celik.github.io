@@ -72,7 +72,7 @@
     "pubmedUrl": "https://www.ncbi.nlm.nih.gov/pubmed/36379317",
     "preprintUrl": null,
     "citations": 261,
-    "selected": true
+    "selected": false
   },
   {
     "id": "tan2026-science-advances",
@@ -82,12 +82,12 @@
     "venue": "Science Advances",
     "venueAbbr": "Sci Adv",
     "type": "journal",
-    "doi": null,
-    "url": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=zidMl6YAAAAJ&citation_for_view=zidMl6YAAAAJ:MXK_kJrjxJIC",
+    "doi": "10.1126/sciadv.aeb5297",
+    "url": "https://doi.org/10.1126/sciadv.aeb5297",
     "pubmedUrl": null,
     "preprintUrl": null,
     "citations": 4,
-    "selected": false
+    "selected": true
   },
   {
     "id": "dasilva2026-cell-host-microbe",
@@ -97,10 +97,10 @@
     "venue": "Cell Host & Microbe",
     "venueAbbr": "Cell Host Microbe",
     "type": "journal",
-    "doi": null,
-    "url": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=zidMl6YAAAAJ&citation_for_view=zidMl6YAAAAJ:KlAtU1dfN6UC",
+    "doi": "10.1016/j.chom.2026.01.002",
+    "url": "https://doi.org/10.1016/j.chom.2026.01.002",
     "pubmedUrl": null,
-    "preprintUrl": "https://www.biorxiv.org/content/10.1101/2025.01.31.635924v1",
+    "preprintUrl": null,
     "citations": 3,
     "selected": false
   },
