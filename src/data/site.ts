@@ -25,14 +25,14 @@ export const site = {
 
   socials: [
     {
+      label: 'ORCID',
+      href: 'https://orcid.org/0000-0001-8301-0172',
+      icon: 'orcid',
+    },
+    {
       label: 'Google Scholar',
       href: 'https://scholar.google.com/citations?user=zidMl6YAAAAJ',
       icon: 'scholar',
-    },
-    {
-      label: 'Bluesky',
-      href: 'https://bsky.app/profile/cenkcelik.bsky.social',
-      icon: 'bluesky',
     },
     {
       label: 'LinkedIn',
@@ -40,14 +40,14 @@ export const site = {
       icon: 'linkedin',
     },
     {
+      label: 'Bluesky',
+      href: 'https://bsky.app/profile/cenkcelik.bsky.social',
+      icon: 'bluesky',
+    },
+    {
       label: 'X (Twitter)',
       href: 'https://twitter.com/_cenk',
       icon: 'x',
-    },
-    {
-      label: 'ORCID',
-      href: 'https://orcid.org/0000-0001-8301-0172',
-      icon: 'orcid',
     },
   ],
 
