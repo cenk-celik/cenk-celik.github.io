@@ -1,5 +1,20 @@
 [
   {
+    "id": "celik2026-genome-medicine",
+    "title": "Spatial ecology of breast cancer reveals co-evolution of proliferative and dormant niches",
+    "authors": ["C. Celik", "W. A. Weston", "T. Moreas-Lacerda", "E. Withnell", "S. Pan", "T. Chu", "J. Labbadia", "A. R. Barr", "M. Secrier"],
+    "year": 2026,
+    "venue": "Genome Medicine",
+    "venueAbbr": "Genome Med",
+    "type": "journal",
+    "doi": "10.1186/s13073-026-01711-0",
+    "url": "https://doi.org/10.1186/s13073-026-01711-0",
+    "pubmedUrl": null,
+    "preprintUrl": null,
+    "citations": 4,
+    "selected": true
+  },
+  {
     "id": "celik2025-mol-oncol-review",
     "title": "Decrypting cancer's spatial code: from single cells to tissue niches",
     "authors": ["C. Celik", "S. Pan", "E. Withnell", "H. Wang Lam", "M. Secrier"],
@@ -12,21 +27,6 @@
     "pubmedUrl": null,
     "preprintUrl": null,
     "citations": 3,
-    "selected": true
-  },
-  {
-    "id": "celik2025-biorxiv-g0-breast-cancer",
-    "title": "Balancing tumour proliferation and sustained cell cycle arrest through proteostasis remodelling drives immune niche compartmentalisation in breast cancer",
-    "authors": ["C. Celik", "E. Withnell", "S. Pan", "T. Chu", "J. Labbadia", "M. Secrier"],
-    "year": 2025,
-    "venue": "bioRxiv",
-    "venueAbbr": "bioRxiv",
-    "type": "preprint",
-    "doi": "10.1101/2025.01.08.632014",
-    "url": "https://doi.org/10.1101/2025.01.08.632014",
-    "pubmedUrl": null,
-    "preprintUrl": "https://doi.org/10.1101/2025.01.08.632014",
-    "citations": 4,
     "selected": true
   },
   {
