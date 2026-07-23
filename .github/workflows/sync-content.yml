@@ -3,9 +3,9 @@ name: Sync content
 # Keeps publications, software stats and the Bluesky feed current with no
 # manual steps. Runs daily and can also be triggered on demand from the
 # Actions tab. Each fetch script is independently "keep-last-good": if
-# Google Scholar, GitHub or Bluesky is unreachable or blocks the request,
-# that one file is simply left as it was and the run still succeeds - the
-# next scheduled run tries again.
+# Google Scholar, Semantic Scholar, GitHub or Bluesky is unreachable or
+# blocks the request, that one file is simply left as it was and the run
+# still succeeds - the next scheduled run tries again.
 on:
   schedule:
     - cron: "0 6 * * *" # 06:00 UTC daily
@@ -33,7 +33,7 @@ jobs:
       - name: Install script dependencies
         run: pip install -r scripts/requirements.txt
 
-      - name: Fetch publications from Google Scholar
+      - name: Fetch citation counts (Google Scholar via a free proxy, falls back to Semantic Scholar)
         run: python scripts/fetch_publications.py
 
       - name: Fetch GitHub repository stats

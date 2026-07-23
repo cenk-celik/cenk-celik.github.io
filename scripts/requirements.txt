@@ -1,1 +1,4 @@
 scholarly>=1.7.11
+# scholarly's proxy support needs httpx's SOCKS extra; without this,
+# `from scholarly import ProxyGenerator` raises ImportError at import time.
+socksio
