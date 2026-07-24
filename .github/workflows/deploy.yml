@@ -39,6 +39,14 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           path: ./dist
+          # Since Sept 2024 this action tars up ./dist excluding anything
+          # starting with a dot by default (a security-motivated breaking
+          # change, to stop accidentally-included .env-style files leaking).
+          # That silently dropped public/.well-known/atproto-did from every
+          # deploy - the build was always correct, the live site 404'd
+          # because the file never made it into the uploaded artifact.
+          # .git and .github stay excluded either way, so this is safe.
+          include-hidden-files: true
 
   deploy:
     needs: build
