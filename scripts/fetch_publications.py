@@ -2,40 +2,32 @@
 """
 Refresh citation counts in publications.json and metrics.json.
 
-Primary source: Google Scholar, via the `scholarly` library routed
-through a free, automatically-sourced rotating proxy
-(`ProxyGenerator.FreeProxies()`) - no account, no API key, no
-registration with any website. Two earlier approaches were tried and
-dropped: scraping Google Scholar directly (blocked on essentially every
-GitHub Actions run - shared runner IPs are heavily flagged), and routing
-through paid/registered proxy or scraping-API services (ScraperAPI,
-Webshare, SerpApi), which either turned out not to be free in practice or
-required signing up somewhere - ruled out by request. Free rotating
-proxies avoid both problems, at a real cost: they are frequently slow,
-already dead, or already blocked by Google themselves, so this may fail
-more often than a paid proxy would have. That's an accepted trade-off for
-needing zero registration anywhere, not a bug - the Semantic Scholar
-fallback below exists specifically to absorb those failures.
-
-Fallback source: the Semantic Scholar Academic Graph API (see
-fetch_from_semantic_scholar() below) - a plain JSON API, no key or
-registration needed, used whenever the Google Scholar attempt fails for
-any reason (no working free proxy found, Google blocking the request
-even through a proxy, etc.), so the site's citation counts never freeze
-for weeks the way they did before this fallback existed.
+Source: Google Scholar, via the `scholarly` library routed through a
+free, automatically-sourced rotating proxy (`ProxyGenerator.FreeProxies()`)
+- no account, no API key, no registration with any website. Two earlier
+approaches were tried and dropped: scraping Google Scholar directly
+(blocked on essentially every GitHub Actions run - shared runner IPs are
+heavily flagged), and routing through paid/registered proxy or
+scraping-API services (ScraperAPI, Webshare, SerpApi), which either
+turned out not to be free in practice or required signing up somewhere -
+ruled out by request. Free rotating proxies avoid both problems, at a
+real cost: they are frequently slow, already dead, or already blocked by
+Google themselves, so this may fail more often than a paid proxy would
+have. That's an accepted trade-off for needing zero registration
+anywhere, not a bug.
 
 Only citation counts are ever touched here - title, authors, venue, type,
 DOI, links and `selected` are hand-curated and left exactly as they are.
-New publications are not auto-added from either source: both Google
-Scholar and Semantic Scholar occasionally split one real paper into two
-records (e.g. a preprint indexed separately from its published version),
-so adding papers automatically risks creating duplicates. Add new entries
-to publications.json by hand; from the next run onwards this script keeps
-their citation count current.
+New publications are not auto-added from Google Scholar: it occasionally
+splits one real paper into two records (e.g. a preprint indexed
+separately from its published version), so adding papers automatically
+risks creating duplicates. Add new entries to publications.json by hand;
+from the next run onwards this script keeps their citation count current.
 
-On total failure (both sources unreachable) this prints a warning and
-exits 0 without touching the data files, so the site keeps building from
-the last known-good data ("keep-last-good").
+On failure (no working free proxy found, or Google blocking the request
+even through a proxy) this prints a warning and exits 0 without touching
+the data files, so the site keeps building from the last known-good data
+("keep-last-good").
 
 Run manually with: python scripts/fetch_publications.py
 """
@@ -46,20 +38,9 @@ import datetime
 import json
 import re
 import sys
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 SCHOLAR_ID = "zidMl6YAAAAJ"
-
-# Semantic Scholar authorId for Cenk Celik (UCL) - confirmed by
-# cross-checking affiliation and known paper titles against
-# https://api.semanticscholar.org/graph/v1/author/search?query=Cenk+Celik
-SEMANTIC_SCHOLAR_AUTHOR_ID = "1491365022"
-SEMANTIC_SCHOLAR_API = f"https://api.semanticscholar.org/graph/v1/author/{SEMANTIC_SCHOLAR_AUTHOR_ID}"
-SEMANTIC_SCHOLAR_FIELDS = "citationCount,hIndex,papers.title,papers.citationCount,papers.externalIds"
 
 ROOT = Path(__file__).resolve().parent.parent
 PUB_PATH = ROOT / "src" / "content" / "publications" / "publications.json"
@@ -89,23 +70,7 @@ def format_publications(publications: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _get_json(url: str, attempts: int = 3) -> dict | None:
-    """Shared GET-JSON-with-retries helper for both sources below."""
-    req = urllib.request.Request(url, headers={"User-Agent": "cenk-celik-github-io-site"})
-    last_exc: Exception | None = None
-    for attempt in range(attempts):
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read())
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
-            last_exc = exc
-            if attempt < attempts - 1:
-                time.sleep(2**attempt)  # 1s, 2s backoff before retrying
-    print(f"Request failed ({last_exc}): {url.split('?')[0]}", file=sys.stderr)
-    return None
-
-
-# --- Primary source: Google Scholar, via scholarly + a free proxy ----------
+# --- Google Scholar, via scholarly + a free proxy ---------------------------
 
 
 def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
@@ -164,60 +129,12 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
     return by_title, metrics
 
 
-# --- Fallback source: Semantic Scholar --------------------------------------
-
-
-def fetch_from_semantic_scholar() -> tuple[dict[str, int], dict[str, int], dict] | None:
-    """Returns (doi -> count, normalised title -> count, metrics dict), or
-    None if Semantic Scholar couldn't be reached either."""
-    params = urllib.parse.urlencode({"fields": SEMANTIC_SCHOLAR_FIELDS})
-    author = _get_json(f"{SEMANTIC_SCHOLAR_API}?{params}")
-    if author is None:
-        return None
-
-    papers = author.get("papers") or []
-    if not papers:
-        print("Semantic Scholar returned no papers this run.", file=sys.stderr)
-        return None
-
-    by_doi: dict[str, int] = {}
-    by_title: dict[str, int] = {}
-    for p in papers:
-        count = p.get("citationCount") or 0
-        doi = (p.get("externalIds") or {}).get("DOI")
-        if doi:
-            by_doi[doi.lower()] = count
-        title = p.get("title")
-        if title:
-            by_title[normalise(title)] = count
-
-    metrics = {
-        "citations": author.get("citationCount", 0),
-        "hIndex": author.get("hIndex", 0),
-        # Semantic Scholar has no i10-index field; compute it the same way
-        # Google Scholar does - the count of this author's papers with 10
-        # or more citations, across their whole Semantic Scholar record.
-        "i10Index": sum(1 for p in papers if (p.get("citationCount") or 0) >= 10),
-    }
-    return by_doi, by_title, metrics
-
-
 def main() -> int:
-    source = "Google Scholar"
-    by_doi: dict[str, int] = {}
-    by_title: dict[str, int] = {}
-
     result = fetch_from_google_scholar()
-    if result is not None:
-        by_title, metrics_totals = result
-    else:
-        print("Falling back to Semantic Scholar for this run.", file=sys.stderr)
-        source = "Semantic Scholar"
-        fallback = fetch_from_semantic_scholar()
-        if fallback is None:
-            print("Semantic Scholar fallback also failed; keeping existing data.", file=sys.stderr)
-            return 0
-        by_doi, by_title, metrics_totals = fallback
+    if result is None:
+        print("Could not reach Google Scholar this run; keeping existing data.", file=sys.stderr)
+        return 0
+    by_title, metrics_totals = result
 
     if not PUB_PATH.exists():
         print("publications.json not found; nothing to update.", file=sys.stderr)
@@ -226,12 +143,8 @@ def main() -> int:
     publications = json.loads(PUB_PATH.read_text(encoding="utf-8"))
     updated = 0
     for pub in publications:
-        doi = (pub.get("doi") or "").lower()
         key = normalise(pub.get("title", ""))
-        if doi and doi in by_doi:
-            pub["citations"] = by_doi[doi]
-            updated += 1
-        elif key in by_title:
+        if key in by_title:
             pub["citations"] = by_title[key]
             updated += 1
         # else: not found in this run's source - leave its citation count
@@ -242,7 +155,7 @@ def main() -> int:
     metrics = {**metrics_totals, "updated": datetime.date.today().isoformat()}
     METRICS_PATH.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
 
-    print(f"Updated citation counts for {updated}/{len(publications)} publications, from {source}.")
+    print(f"Updated citation counts for {updated}/{len(publications)} publications, from Google Scholar.")
     return 0
 
 
