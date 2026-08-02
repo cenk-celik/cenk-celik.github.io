@@ -16,6 +16,22 @@ Google themselves, so this may fail more often than a paid proxy would
 have. That's an accepted trade-off for needing zero registration
 anywhere, not a bug.
 
+Every publication's citation count is read straight off the author's own
+profile page (the same "Title / Cited by / Year" table you see on
+https://scholar.google.com/citations?user=<id>) as part of the one
+`scholarly.fill(author, ...)` call below - it is never fetched by opening
+each publication's own page. That used to happen here (one extra
+`scholarly.fill(pub)` request per paper), and per the scholarly
+maintainers it is specifically that per-publication scraping - not
+author-level scraping - that free proxies essentially never get away
+with (github.com/scholarly-python-package/scholarly, discussion #330:
+"FreeProxy is not at all an option if you are scraping publications ...
+but works mostly fine if you are scraping authors' info"). Dropping it
+also cuts a run from 1 + one-request-per-paper down to about two requests
+total (search + one profile page, since this author has well under the
+100-publication page size scholarly requests at once) - both fewer
+requests and each one far more likely to get through.
+
 Only citation counts are ever touched here - title, authors, venue, type,
 DOI, links and `selected` are hand-curated and left exactly as they are.
 New publications are not auto-added from Google Scholar: it occasionally
@@ -101,18 +117,16 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
         scholarly.use_proxy(pg, pg)
 
         author_stub = scholarly.search_author_id(SCHOLAR_ID)
+        # One request: the "publications" section already carries each
+        # paper's citation count straight off the profile table (see the
+        # module docstring) - no per-publication fill() needed or wanted.
         author = scholarly.fill(author_stub, sections=["basics", "publications", "indices"])
 
         by_title: dict[str, int] = {}
         for pub in author.get("publications", []):
-            try:
-                filled = scholarly.fill(pub)
-            except Exception as exc:  # noqa: BLE001 - one bad publication shouldn't sink the run
-                print(f"Skipping one publication after a fetch error ({exc}).", file=sys.stderr)
-                continue
-            title = (filled.get("bib", {}).get("title") or "").strip()
+            title = (pub.get("bib", {}).get("title") or "").strip()
             if title:
-                by_title[normalise(title)] = filled.get("num_citations", 0)
+                by_title[normalise(title)] = pub.get("num_citations", 0)
     except Exception as exc:  # noqa: BLE001 - free-proxy failure modes are varied and unpredictable
         print(f"Could not reach Google Scholar this run ({exc}).", file=sys.stderr)
         return None
