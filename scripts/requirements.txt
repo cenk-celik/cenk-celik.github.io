@@ -2,3 +2,17 @@ scholarly>=1.7.11
 # scholarly's proxy support needs httpx's SOCKS extra; without this,
 # `from scholarly import ProxyGenerator` raises ImportError at import time.
 socksio
+# Pinned below 1.1.0 on purpose: scholarly 1.7.11's _fp_coroutine (used by
+# ProxyGenerator.FreeProxies()) calls freeproxy.get_proxy_list() with no
+# argument once its initial proxy batch runs dry mid-run, to fetch a fresh
+# one. free-proxy made `repeat` a required (no-default) argument to that
+# method starting in 1.1.0, so that refill call now dies with "get_proxy_list()
+# missing 1 required positional argument: 'repeat'" - a real bug in scholarly
+# 1.7.11, not something wrong on our end (confirmed by reading both packages'
+# source: scholarly/_proxy_generator.py:518 vs. fp/fp.py across free-proxy
+# versions). scholarly's own code already has an `except TypeError` fallback
+# for pre-1.1.0 free-proxy (see the comment above that fallback: "free-proxy <
+# 1.1.0"), so staying below 1.1.0 keeps us on the exact path its authors
+# already wrote a compatibility shim for, rather than the one they didn't.
+# Revisit once a scholarly release fixes the missing `repeat` at that call site.
+free-proxy<1.1.0
