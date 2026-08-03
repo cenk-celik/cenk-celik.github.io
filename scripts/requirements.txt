@@ -2,10 +2,10 @@ scholarly>=1.7.11
 # scholarly's proxy support needs httpx's SOCKS extra; without this,
 # `from scholarly import ProxyGenerator` raises ImportError at import time.
 socksio
-# fetch_publications.py imports fp.fp/fp.errors directly (see
-# _find_working_proxy() there) instead of going through scholarly's own
-# ProxyGenerator.FreeProxies(), which hit two separate real bugs in its
-# internal proxy-cycling generator. No version pin needed here: unlike
-# that internal generator, free-proxy's own public get() has always
-# handled an empty scrape safely, on every version.
-free-proxy
+# No free-proxy package dependency here on purpose: fetch_publications.py
+# scrapes free-proxy-list.net itself (see _scrape_candidate_proxies()
+# there) rather than going through either scholarly's own
+# ProxyGenerator.FreeProxies() or the free-proxy package, both of which
+# hit real bugs/dead ends. That scraping uses `requests` and
+# `beautifulsoup4`, which are already hard dependencies of scholarly
+# itself, so nothing new is needed here for it.
