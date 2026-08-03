@@ -42,8 +42,12 @@ from the next run onwards this script keeps their citation count current.
 
 On failure (no working free proxy found, or Google blocking the request
 even through a proxy) this prints a warning and exits 0 without touching
-the data files, so the site keeps building from the last known-good data
-("keep-last-good").
+publications.json or metrics.json, so the site keeps building from the
+last known-good data ("keep-last-good"). It does still write
+sync-status.json (outcome + a plain-English reason) on every run,
+success or failure, so a silent failure is visible straight from `git
+log src/content/publications/sync-status.json` rather than only from a
+GitHub Actions log that needs a login to this repo to read.
 
 Run manually with: python scripts/fetch_publications.py
 """
@@ -61,11 +65,28 @@ SCHOLAR_ID = "zidMl6YAAAAJ"
 ROOT = Path(__file__).resolve().parent.parent
 PUB_PATH = ROOT / "src" / "content" / "publications" / "publications.json"
 METRICS_PATH = ROOT / "src" / "content" / "publications" / "metrics.json"
+STATUS_PATH = ROOT / "src" / "content" / "publications" / "sync-status.json"
 
 
 def normalise(title: str) -> str:
     """A stable-ish key for matching the same paper across sources."""
     return re.sub(r"[^a-z0-9]+", "", title.lower())
+
+
+def write_status(outcome: str, message: str) -> None:
+    """Written on every run, success or failure alike - deliberately the
+    one thing this script still writes even when keep-last-good means
+    nothing else changes. Viewing a GitHub Actions log needs a login to
+    this repo; this doesn't - it's just a committed file, so a run that
+    quietly failed still leaves a plain-English reason behind in `git
+    log`/`git show` for whoever's debugging it (including a Claude
+    session with no GitHub credentials)."""
+    status = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "outcome": outcome,
+        "message": message,
+    }
+    STATUS_PATH.write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
 
 
 def format_publications(publications: list[dict]) -> str:
@@ -91,7 +112,9 @@ def format_publications(publications: list[dict]) -> str:
 
 def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
     """Returns (normalised title -> citation count, metrics dict), or None
-    if Google Scholar couldn't be reached this run.
+    if Google Scholar couldn't be reached this run. Either way, also
+    writes sync-status.json with a plain-English reason - see
+    write_status() above for why that exists.
 
     This never raises: free-proxy sourcing is unpredictable enough that it
     can fail in ways scholarly itself doesn't turn into a clean boolean -
@@ -105,12 +128,14 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
     try:
         from scholarly import ProxyGenerator, scholarly
     except ImportError as exc:
+        write_status("failed", f"scholarly is not usable ({exc}); skipped Google Scholar")
         print(f"scholarly is not usable ({exc}); skipping Google Scholar.", file=sys.stderr)
         return None
 
     try:
         pg = ProxyGenerator()
         if not pg.FreeProxies():
+            write_status("failed", "no working free proxy found this run")
             print("Could not find a working free proxy this run; skipping Google Scholar.", file=sys.stderr)
             return None
         # Pass pg twice so *every* request goes through the proxy.
@@ -128,10 +153,12 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
             if title:
                 by_title[normalise(title)] = pub.get("num_citations", 0)
     except Exception as exc:  # noqa: BLE001 - free-proxy failure modes are varied and unpredictable
+        write_status("failed", f"error while fetching from Google Scholar: {exc}")
         print(f"Could not reach Google Scholar this run ({exc}).", file=sys.stderr)
         return None
 
     if not by_title:
+        write_status("failed", "a proxy worked but Google Scholar returned no publications this run")
         print("Google Scholar returned no publications this run.", file=sys.stderr)
         return None
 
@@ -140,6 +167,7 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
         "hIndex": author.get("hindex", 0),
         "i10Index": author.get("i10index", 0),
     }
+    write_status("ok", f"fetched {len(by_title)} publications from Google Scholar")
     return by_title, metrics
 
 
@@ -151,6 +179,7 @@ def main() -> int:
     by_title, metrics_totals = result
 
     if not PUB_PATH.exists():
+        write_status("failed", "publications.json not found in this checkout")
         print("publications.json not found; nothing to update.", file=sys.stderr)
         return 0
 
@@ -169,6 +198,7 @@ def main() -> int:
     metrics = {**metrics_totals, "updated": datetime.date.today().isoformat()}
     METRICS_PATH.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
 
+    write_status("ok", f"updated {updated}/{len(publications)} publications")
     print(f"Updated citation counts for {updated}/{len(publications)} publications, from Google Scholar.")
     return 0
 
