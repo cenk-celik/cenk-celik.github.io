@@ -45,12 +45,25 @@ swapping out:
    worth ruling out directly rather than guessing again.
 
 So this scrapes the page itself with a realistic browser User-Agent
-instead of going through either of the above for that step, then still
-hands each candidate to scholarly's own `SingleProxy()` to confirm it
-against scholar.google.com specifically before trusting it. `requests`
-and `beautifulsoup4` are already hard dependencies of `scholarly` itself,
-so this adds no new package - if anything it's one fewer, since
-`free-proxy` is no longer needed at all.
+instead of going through either of the above for that step - and that
+part worked: 300 real candidates, same run. `requests` and
+`beautifulsoup4` are already hard dependencies of `scholarly` itself, so
+this adds no new package - if anything it's one fewer, since `free-proxy`
+is no longer needed at all.
+
+Each candidate is still handed to scholarly's own `SingleProxy()` before
+being trusted - worth being precise about what that actually checks,
+since an earlier version of this comment overstated it: `_use_proxy()` ->
+`_check_proxy()` (scholarly/_proxy_generator.py) tests the proxy against
+`http://httpbin.org/ip` with a 5-second timeout, a general "is this proxy
+alive and does it forward requests" check. It is not scholar.google.com
+and was never Google-specific - a proxy passing this only means the
+proxy itself works, not that Google will accept it too. Worth naming
+plainly because it changes what "candidates found, all rejected" means:
+it's not evidence of Google-specific blocking, it's ordinary free-proxy
+attrition (most listed proxies are dead or too slow at any given moment)
+compounded by only trying a fraction of what got scraped - see
+PROXY_ATTEMPTS below.
 
 Every publication's citation count is read straight off the author's own
 profile page (the same "Title / Cited by / Year" table you see on
@@ -163,7 +176,19 @@ PROXY_SCRAPE_HEADERS = {
     ),
     "Accept-Language": "en-US,en;q=0.9",
 }
-PROXY_ATTEMPTS = 15
+
+# How many of the scraped candidates to test (via scholarly's own
+# SingleProxy check) before giving up. Free proxy lists have a high dead
+# rate at any given moment - most tools and guides on this put the share
+# that's actually alive and fast enough somewhere in the low tens of
+# percent - so treat this as "how many rolls of the dice", not "surely
+# one of the first few will work": at even a pessimistic ~5% true
+# success rate, 60 tries gives roughly a 95% chance of finding at least
+# one working proxy out of a typical few-hundred-candidate scrape;
+# 15 gives only about 54%. Each try costs at most ~5 seconds (scholarly's
+# own timeout on this check), so 60 is a some-minutes worst case, not a
+# big one, well inside runs that have taken up to ~16 minutes before.
+PROXY_ATTEMPTS = 60
 
 
 def _scrape_candidate_proxies() -> list[str]:
@@ -206,19 +231,20 @@ def _scrape_candidate_proxies() -> list[str]:
 
 def _find_working_proxy(pg) -> tuple[str | None, str]:
     """Scrape a batch of candidate proxies and hand each to scholarly's
-    own SingleProxy() (which checks scholar.google.com specifically,
-    unlike the general-purpose check a plain proxy-list scrape can do) -
-    see the module docstring for why this scrapes the source page itself
-    rather than going through scholarly's FreeProxies() or the
-    free-proxy package.
+    own SingleProxy(), up to PROXY_ATTEMPTS of them, until one passes -
+    see the module docstring for exactly what that check does (a general
+    proxy-alive check, not anything Google-specific) and why this scrapes
+    the source page itself rather than going through scholarly's
+    FreeProxies() or the free-proxy package.
 
     Returns (proxy_url, "ok") on success, or (None, breakdown) on
     failure. The breakdown separates "the scrape itself produced no
     candidates at all" (every source URL failed, or the table came back
-    empty) from "candidates were found but scholar.google.com rejected
-    every one tried" - those point at different problems, and collapsing
-    them into one message is exactly what made the previous couple of
-    rounds here slower than they needed to be.
+    empty) from "candidates were found but none tried passed scholarly's
+    check" - those point at different problems (site/scrape health vs.
+    ordinary free-proxy attrition), and collapsing them into one message
+    is exactly what made the previous couple of rounds here slower than
+    they needed to be.
     """
     candidates = _scrape_candidate_proxies()
     if not candidates:
@@ -230,7 +256,7 @@ def _find_working_proxy(pg) -> tuple[str | None, str]:
         proxy_url = f"http://{proxy}"
         if pg.SingleProxy(http=proxy_url, https=proxy_url):
             return proxy_url, "ok"
-    breakdown = f"scraped {len(candidates)} candidates, tried {len(tried)} of them, scholar.google.com rejected every one"
+    breakdown = f"scraped {len(candidates)} candidates, tried {len(tried)} of them, none passed scholarly's own proxy check"
     return None, breakdown
 
 
