@@ -126,10 +126,10 @@ def format_publications(publications: list[dict]) -> str:
 
 # --- Google Scholar, via scholarly + a free proxy ---------------------------
 
-PROXY_ATTEMPTS = 5
+PROXY_ATTEMPTS = 10
 
 
-def _find_working_proxy(pg) -> str | None:
+def _find_working_proxy(pg) -> tuple[str | None, str]:
     """Source a single working proxy via free-proxy's own get() and hand
     it to scholarly with SingleProxy() - see the module docstring for why
     this doesn't use scholarly's own FreeProxies()/_fp_coroutine.
@@ -139,18 +139,34 @@ def _find_working_proxy(pg) -> str | None:
     SingleProxy() (which does check scholar.google.com) to confirm each
     candidate before trusting it, and moves on to a fresh one from
     get() if that check fails - up to PROXY_ATTEMPTS times.
+
+    Returns (proxy_url, "ok") on success, or (None, breakdown) on
+    failure. The breakdown separates "free-proxy itself never produced a
+    candidate" (site down, scrape blocked, nothing there) from "a
+    candidate was found but scholar.google.com specifically rejected it"
+    (the proxy is fine in general, Google just doesn't like it) - the
+    previous plain "no working free proxy found" message collapsed both
+    into one, and which one it actually is points at a different problem.
     """
     from fp.errors import FreeProxyException
     from fp.fp import FreeProxy
 
+    no_candidate = 0
+    rejected_by_scholar = 0
     for _ in range(PROXY_ATTEMPTS):
         try:
             proxy_url = FreeProxy(rand=True, timeout=1).get()
         except FreeProxyException:
+            no_candidate += 1
             continue  # this attempt's scrape/candidate didn't pan out; try again
         if proxy_url and pg.SingleProxy(http=proxy_url, https=proxy_url):
-            return proxy_url
-    return None
+            return proxy_url, "ok"
+        rejected_by_scholar += 1
+    breakdown = (
+        f"{no_candidate}/{PROXY_ATTEMPTS} attempts found no candidate proxy at all, "
+        f"{rejected_by_scholar}/{PROXY_ATTEMPTS} found one but scholar.google.com rejected it"
+    )
+    return None, breakdown
 
 
 def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
@@ -177,9 +193,10 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
 
     try:
         pg = ProxyGenerator()
-        if not _find_working_proxy(pg):
-            write_status("failed", f"no working free proxy found in {PROXY_ATTEMPTS} attempts this run")
-            print("Could not find a working free proxy this run; skipping Google Scholar.", file=sys.stderr)
+        proxy_url, proxy_status = _find_working_proxy(pg)
+        if not proxy_url:
+            write_status("failed", f"no working free proxy found in {PROXY_ATTEMPTS} attempts this run ({proxy_status})")
+            print(f"Could not find a working free proxy this run ({proxy_status}); skipping Google Scholar.", file=sys.stderr)
             return None
         # Pass pg twice so *every* request goes through the proxy.
         scholarly.use_proxy(pg, pg)
