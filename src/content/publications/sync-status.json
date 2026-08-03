@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-03T08:37:25+00:00",
+  "timestamp": "2026-08-03T08:58:20+00:00",
   "outcome": "failed",
-  "message": "no working free proxy this run: scraped 300 candidates, tried 15 of them, scholar.google.com rejected every one"
+  "message": "no working free proxy this run: scraped 300 candidates, tried 60 of them, none passed scholarly's own proxy check"
 }
