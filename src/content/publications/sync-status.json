@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-03T07:47:56+00:00",
+  "timestamp": "2026-08-03T08:09:43+00:00",
   "outcome": "failed",
-  "message": "error while fetching from Google Scholar: pop from empty list"
+  "message": "no working free proxy found in 5 attempts this run"
 }
