@@ -182,13 +182,14 @@ PROXY_SCRAPE_HEADERS = {
 # rate at any given moment - most tools and guides on this put the share
 # that's actually alive and fast enough somewhere in the low tens of
 # percent - so treat this as "how many rolls of the dice", not "surely
-# one of the first few will work": at even a pessimistic ~5% true
-# success rate, 60 tries gives roughly a 95% chance of finding at least
-# one working proxy out of a typical few-hundred-candidate scrape;
-# 15 gives only about 54%. Each try costs at most ~5 seconds (scholarly's
-# own timeout on this check), so 60 is a some-minutes worst case, not a
-# big one, well inside runs that have taken up to ~16 minutes before.
-PROXY_ATTEMPTS = 60
+# one of the first few will work". 60 already came back 0/60 once for
+# real, against a confirmed-healthy 300-candidate scrape, which reads
+# more like "5 seconds is too tight a bar" (see the _TIMEOUT override in
+# _find_working_proxy) than "unlucky 60 in a row" - under a 5% chance of
+# that at even a pessimistic 5% true success rate. Raised alongside that
+# timeout fix so a genuinely low success rate still gets a fair number of
+# tries: at 5%, 100 gives roughly a 99.4% chance of at least one success.
+PROXY_ATTEMPTS = 100
 
 
 def _scrape_candidate_proxies() -> list[str]:
@@ -249,6 +250,19 @@ def _find_working_proxy(pg) -> tuple[str | None, str]:
     candidates = _scrape_candidate_proxies()
     if not candidates:
         return None, "the scrape itself returned zero candidate proxies (every source URL failed or came back empty)"
+
+    # scholarly hardcodes this check's timeout to 5 seconds
+    # (ProxyGenerator.__init__ sets self._TIMEOUT = 5) with no public way
+    # to configure it - not exposed as a constructor argument or a
+    # documented setting anywhere. 0/60 real candidates passing on the
+    # last run, right after fixing the scrape itself, points more at "5
+    # seconds is an unfair bar for a free proxy relaying a request to a
+    # second external site" than at "60 unlucky picks in a row" (at even
+    # a pessimistic 5% true success rate, that's under a 5% chance).
+    # Reaching past the public API for this specific attribute is a
+    # deliberate, documented trade-off, not an oversight - there's no
+    # other lever available without forking scholarly outright.
+    pg._TIMEOUT = 8
 
     random.shuffle(candidates)
     tried = candidates[:PROXY_ATTEMPTS]
