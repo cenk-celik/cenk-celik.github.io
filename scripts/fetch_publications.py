@@ -3,18 +3,35 @@
 Refresh citation counts in publications.json and metrics.json.
 
 Source: Google Scholar, via the `scholarly` library routed through a
-free, automatically-sourced rotating proxy (`ProxyGenerator.FreeProxies()`)
-- no account, no API key, no registration with any website. Two earlier
-approaches were tried and dropped: scraping Google Scholar directly
-(blocked on essentially every GitHub Actions run - shared runner IPs are
-heavily flagged), and routing through paid/registered proxy or
-scraping-API services (ScraperAPI, Webshare, SerpApi), which either
-turned out not to be free in practice or required signing up somewhere -
-ruled out by request. Free rotating proxies avoid both problems, at a
-real cost: they are frequently slow, already dead, or already blocked by
-Google themselves, so this may fail more often than a paid proxy would
-have. That's an accepted trade-off for needing zero registration
-anywhere, not a bug.
+free, automatically-sourced proxy - no account, no API key, no
+registration with any website. Two earlier approaches were tried and
+dropped: scraping Google Scholar directly (blocked on essentially every
+GitHub Actions run - shared runner IPs are heavily flagged), and routing
+through paid/registered proxy or scraping-API services (ScraperAPI,
+Webshare, SerpApi), which either turned out not to be free in practice or
+required signing up somewhere - ruled out by request. Free rotating
+proxies avoid both problems, at a real cost: they are frequently slow,
+already dead, or already blocked by Google themselves, so this may fail
+more often than a paid proxy would have. That's an accepted trade-off for
+needing zero registration anywhere, not a bug.
+
+The proxy itself is sourced with the `free-proxy` package's own `get()`
+method (see _find_working_proxy() below), not `scholarly`'s
+`ProxyGenerator.FreeProxies()`. FreeProxies() runs its own bespoke
+generator (`_fp_coroutine`) to cycle through candidate proxies, and it
+has broken outright, not just "found a bad proxy", on two separate real
+bugs the first two times this ran for real: a missing `repeat` argument
+on its refill call once its first proxy batch ran out (`free-proxy`
+turned that into a required argument in 1.1.0; `scholarly` 1.7.11's
+refill call never passed one), and a plain `list.pop()` with no
+empty-list guard that crashes outright if a scrape ever turns up zero
+proxies - which is exactly what a transient bad scrape looks like, so
+that path gets exercised precisely when you need it not to crash.
+`free-proxy`'s own public `get()` doesn't have either problem (a safe
+`for` loop, a clean `FreeProxyException` when nothing works, and as of
+1.1.0 it already retries a second, different source site on its own
+before giving up), so this calls that directly and hands the result to
+scholarly as a fixed proxy via `SingleProxy()` instead.
 
 Every publication's citation count is read straight off the author's own
 profile page (the same "Title / Cited by / Year" table you see on
@@ -109,6 +126,32 @@ def format_publications(publications: list[dict]) -> str:
 
 # --- Google Scholar, via scholarly + a free proxy ---------------------------
 
+PROXY_ATTEMPTS = 5
+
+
+def _find_working_proxy(pg) -> str | None:
+    """Source a single working proxy via free-proxy's own get() and hand
+    it to scholarly with SingleProxy() - see the module docstring for why
+    this doesn't use scholarly's own FreeProxies()/_fp_coroutine.
+
+    get() only confirms a proxy can reach google.com in general, not
+    scholar.google.com specifically, so this still asks scholarly's own
+    SingleProxy() (which does check scholar.google.com) to confirm each
+    candidate before trusting it, and moves on to a fresh one from
+    get() if that check fails - up to PROXY_ATTEMPTS times.
+    """
+    from fp.errors import FreeProxyException
+    from fp.fp import FreeProxy
+
+    for _ in range(PROXY_ATTEMPTS):
+        try:
+            proxy_url = FreeProxy(rand=True, timeout=1).get()
+        except FreeProxyException:
+            continue  # this attempt's scrape/candidate didn't pan out; try again
+        if proxy_url and pg.SingleProxy(http=proxy_url, https=proxy_url):
+            return proxy_url
+    return None
+
 
 def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
     """Returns (normalised title -> citation count, metrics dict), or None
@@ -117,13 +160,13 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
     write_status() above for why that exists.
 
     This never raises: free-proxy sourcing is unpredictable enough that it
-    can fail in ways scholarly itself doesn't turn into a clean boolean -
-    e.g. `ProxyGenerator.FreeProxies()` can raise instead of returning
-    False if the underlying proxy-list site is unreachable, which was
-    caught during testing here. An uncaught exception from this function
-    would abort the whole sync-content.yml job (repos and Bluesky steps
-    included), not just this one file, so everything below is wrapped
-    accordingly rather than trusting any single call to fail cleanly.
+    can fail in ways that aren't reliably turned into a clean boolean or a
+    single documented exception type - `_find_working_proxy()` already
+    catches free-proxy's own `FreeProxyException`, but an uncaught
+    exception from anywhere in this function would abort the whole
+    sync-content.yml job (repos and Bluesky steps included), not just this
+    one file, so everything below is wrapped accordingly rather than
+    trusting any single call to fail cleanly.
     """
     try:
         from scholarly import ProxyGenerator, scholarly
@@ -134,8 +177,8 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
 
     try:
         pg = ProxyGenerator()
-        if not pg.FreeProxies():
-            write_status("failed", "no working free proxy found this run")
+        if not _find_working_proxy(pg):
+            write_status("failed", f"no working free proxy found in {PROXY_ATTEMPTS} attempts this run")
             print("Could not find a working free proxy this run; skipping Google Scholar.", file=sys.stderr)
             return None
         # Pass pg twice so *every* request goes through the proxy.
