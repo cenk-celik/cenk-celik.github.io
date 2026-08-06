@@ -6,6 +6,15 @@ name: Sync content
 # Google Scholar, GitHub or Bluesky is unreachable or blocks the request,
 # that one file is simply left as it was and the run still succeeds - the
 # next scheduled run tries again.
+#
+# Two jobs, two different runners: GitHub-hosted runner IPs are
+# well-known cloud ranges that Google Scholar rejects almost universally
+# in practice, so sync-publications runs on a self-hosted runner instead
+# (an ordinary residential IP) - see fetch_publications.py's module
+# docstring for the full evidence trail. GitHub's and Bluesky's public
+# APIs have no such problem, so sync-repos-bluesky stays on ubuntu-latest.
+# Setting up the self-hosted runner is a one-time manual step - see the
+# README's Automation section.
 on:
   schedule:
     - cron: "0 6 * * *" # 06:00 UTC daily
@@ -19,7 +28,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  sync:
+  sync-repos-bluesky:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,9 +42,6 @@ jobs:
       - name: Install script dependencies
         run: pip install -r scripts/requirements.txt
 
-      - name: Fetch citation counts (Google Scholar via a free proxy)
-        run: python scripts/fetch_publications.py
-
       - name: Fetch GitHub repository stats
         run: python scripts/fetch_repos.py
         env:
@@ -48,10 +54,44 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/content/publications src/content/repos/cache.json src/content/bluesky/cache.json
+          git add src/content/repos/cache.json src/content/bluesky/cache.json
           if git diff --cached --quiet; then
             echo "Nothing changed."
           else
-            git commit -m "chore: sync publications, software stats and Bluesky feed"
+            git commit -m "chore: sync software stats and Bluesky feed"
+            git push
+          fi
+
+  sync-publications:
+    needs: sync-repos-bluesky
+    # Runs regardless of the job above's outcome - needs: only sequences
+    # the two jobs so this one starts from an up-to-date checkout, it
+    # doesn't make the publications sync conditional on that one.
+    if: always()
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install script dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Fetch citation counts (Google Scholar)
+        run: python scripts/fetch_publications.py
+
+      - name: Commit changes if any
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/content/publications
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "chore: sync publications"
             git push
           fi

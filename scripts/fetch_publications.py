@@ -2,68 +2,74 @@
 """
 Refresh citation counts in publications.json and metrics.json.
 
-Source: Google Scholar, via the `scholarly` library routed through a
-free, automatically-sourced proxy - no account, no API key, no
-registration with any website. Two earlier approaches were tried and
-dropped: scraping Google Scholar directly (blocked on essentially every
-GitHub Actions run - shared runner IPs are heavily flagged), and routing
-through paid/registered proxy or scraping-API services (ScraperAPI,
-Webshare, SerpApi), which either turned out not to be free in practice or
-required signing up somewhere - ruled out by request. Free rotating
-proxies avoid both problems, at a real cost: they are frequently slow,
-already dead, or already blocked by Google themselves, so this may fail
-more often than a paid proxy would have. That's an accepted trade-off for
-needing zero registration anywhere, not a bug.
+Source: Google Scholar, via the `scholarly` library - no account, no API
+key, no registration with any website. Runs on a self-hosted GitHub
+Actions runner (see the `sync-publications` job in
+.github/workflows/sync-content.yml), not GitHub's own hosted runners -
+that's the load-bearing fact behind everything else in this docstring, so
+it's worth stating first: GitHub-hosted runner IPs are well-known,
+recognisable cloud/datacenter ranges, and both Google Scholar directly and
+the free proxies tried below as a workaround reject that pattern almost
+universally in practice (evidence below). An ordinary residential
+connection doesn't carry that signal.
 
-The proxy itself is scraped directly from free-proxy-list.net by this
-script (see _scrape_candidate_proxies() below) - not sourced via the
-`free-proxy` package, and not via scholarly's own
-`ProxyGenerator.FreeProxies()`. Both of those were tried first, in that
-order, and both failed in ways worth recording rather than silently
-swapping out:
+Given that, the primary path here (`_fetch_author()` called with no proxy
+configured, in `fetch_from_google_scholar()`) is the simplest one
+possible: ask scholarly for the author's profile directly. Only if that
+fails does this fall back to the free-proxy machinery below
+(`_find_working_proxy()`, `_scrape_candidate_proxies()`) - kept for
+resilience, not because it's proven to work. It never once got a proxy
+past scholarly's own liveness check in testing from a GitHub-hosted
+runner, but that evidence is about the old runner's IP range, not this
+code path itself, and a fallback that runs only after the direct attempt
+already failed costs nothing on the days that attempt succeeds.
 
-1. FreeProxies() runs its own bespoke generator (`_fp_coroutine`) to
-   cycle through candidate proxies, and it broke outright, not just
-   "found a bad proxy", on two separate real bugs the first two times
-   this ran for real: a missing `repeat` argument on its refill call once
-   its first proxy batch ran out (`free-proxy` made that a required
-   argument in 1.1.0; `scholarly` 1.7.11's refill call never passed one),
-   and a plain `list.pop()` with no empty-list guard that crashes if a
-   scrape ever turns up zero proxies - exactly what a transient bad
-   scrape looks like, so that path gets hit precisely when it most needs
-   not to crash.
-2. Switching to the `free-proxy` package's own public `get()` fixed both
-   of those (a safe `for` loop, a clean `FreeProxyException` instead of a
-   crash), but then reported zero candidate proxies found at all, ten
-   attempts in a row, on a real run. Fetching the exact same source page
-   by hand at the same time returned a full, live table of proxies
-   updated seconds earlier - so the site wasn't down or empty. The one
-   thing `free-proxy`'s scrape does differently from that manual fetch is
-   send no headers at all (`requests.get(url, timeout=...)`, no
-   User-Agent) - one of the most commonly bot-filtered signatures there
-   is, and plausible enough, combined with the confirmed-live site, to be
-   worth ruling out directly rather than guessing again.
+Earlier approaches, roughly in the order tried and dropped:
 
-So this scrapes the page itself with a realistic browser User-Agent
-instead of going through either of the above for that step - and that
-part worked: 300 real candidates, same run. `requests` and
-`beautifulsoup4` are already hard dependencies of `scholarly` itself, so
-this adds no new package - if anything it's one fewer, since `free-proxy`
-is no longer needed at all.
+1. Scraping Google Scholar directly from a GitHub-hosted runner - blocked
+   outright, essentially every run.
+2. Paid/registered proxy or scraping-API services (ScraperAPI, Webshare,
+   SerpApi) - ruled out by request: no signup anywhere, free tier or not.
+3. `scholarly`'s own `ProxyGenerator.FreeProxies()` - broke outright, not
+   just "found a bad proxy", on two separate real bugs in its
+   `_fp_coroutine` the first two times this ran for real: a missing
+   `repeat` argument on its refill call once the first proxy batch ran
+   out (`free-proxy` made that required in 1.1.0; `scholarly` 1.7.11's
+   refill call never passed one), and a plain `list.pop()` with no
+   empty-list guard that crashes if a scrape ever turns up zero proxies -
+   exactly what a transient bad scrape looks like, so that path gets hit
+   precisely when it most needs not to crash.
+4. The `free-proxy` package's own `get()` - fixed both of the above, but
+   then reported zero candidate proxies found at all, ten attempts in a
+   row, on a real run, despite the source site being confirmed live (a
+   manual fetch at the same time returned a full table updated seconds
+   earlier). The one difference: `free-proxy` sends no User-Agent header
+   at all, one of the most commonly bot-filtered signatures there is.
+5. Scraping the proxy list directly with a realistic browser User-Agent
+   (`_scrape_candidate_proxies()` below, still in use as part of the
+   fallback) - this part worked, 300 real candidates every run since.
+   Actually using any of them kept failing regardless: 0 of 160
+   candidates tried, across two separate real runs (60 then 100, the
+   second with an 8-second timeout instead of scholarly's hardcoded 5, to
+   rule out "the timeout is just too tight"), ever passed scholarly's own
+   `SingleProxy()` check. Meanwhile this same workflow's other steps
+   (GitHub API, Bluesky) succeeded on every run in that period, so
+   GitHub Actions' general internet access was never the problem - it was
+   specifically relaying through a third-party proxy from a GitHub-hosted
+   IP that failed, consistent with proxies refusing traffic that looks
+   like it's coming from a datacenter rather than a real residential user.
 
-Each candidate is still handed to scholarly's own `SingleProxy()` before
-being trusted - worth being precise about what that actually checks,
-since an earlier version of this comment overstated it: `_use_proxy()` ->
-`_check_proxy()` (scholarly/_proxy_generator.py) tests the proxy against
+That last finding is why this moved to a self-hosted runner rather than a
+sixth round of parameter tuning: the evidence pointed at the runner's own
+IP range as the actual constraint, not at anything tunable in code.
+
+Each proxy candidate in the fallback path is still handed to scholarly's
+own `SingleProxy()` before being trusted - worth being precise about what
+that actually checks: `_use_proxy()` -> `_check_proxy()`
+(scholarly/_proxy_generator.py) tests the proxy against
 `http://httpbin.org/ip` with a 5-second timeout, a general "is this proxy
 alive and does it forward requests" check. It is not scholar.google.com
-and was never Google-specific - a proxy passing this only means the
-proxy itself works, not that Google will accept it too. Worth naming
-plainly because it changes what "candidates found, all rejected" means:
-it's not evidence of Google-specific blocking, it's ordinary free-proxy
-attrition (most listed proxies are dead or too slow at any given moment)
-compounded by only trying a fraction of what got scraped - see
-PROXY_ATTEMPTS below.
+and was never Google-specific.
 
 Every publication's citation count is read straight off the author's own
 profile page (the same "Title / Cited by / Year" table you see on
@@ -89,8 +95,8 @@ separately from its published version), so adding papers automatically
 risks creating duplicates. Add new entries to publications.json by hand;
 from the next run onwards this script keeps their citation count current.
 
-On failure (no working free proxy found, or Google blocking the request
-even through a proxy) this prints a warning and exits 0 without touching
+On failure (direct fetch blocked, and no free proxy got through either)
+this prints a warning and exits 0 without touching
 publications.json or metrics.json, so the site keeps building from the
 last known-good data ("keep-last-good"). It does still write
 sync-status.json (outcome + a plain-English reason) on every run,
@@ -157,7 +163,7 @@ def format_publications(publications: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
-# --- Google Scholar, via scholarly + a free proxy ---------------------------
+# --- Google Scholar, via scholarly direct-first, with a free-proxy fallback -
 
 PROXY_SOURCE_URLS = [
     # Primary, then a fallback in case the first is unreachable or its
@@ -274,20 +280,52 @@ def _find_working_proxy(pg) -> tuple[str | None, str]:
     return None, breakdown
 
 
-def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
-    """Returns (normalised title -> citation count, metrics dict), or None
-    if Google Scholar couldn't be reached this run. Either way, also
-    writes sync-status.json with a plain-English reason - see
-    write_status() above for why that exists.
+def _fetch_author(scholarly) -> tuple[dict[str, int], dict]:
+    """Ask scholarly for the author's profile - one `search_author_id` +
+    one `fill()` call - using whatever proxy (or lack of one) is currently
+    configured on the `scholarly` module. Raises on any failure; the two
+    call sites in fetch_from_google_scholar() below each decide what that
+    means (direct failing means "try the proxy fallback"; proxy failing
+    means "give up this run").
+    """
+    author_stub = scholarly.search_author_id(SCHOLAR_ID)
+    # One request: the "publications" section already carries each paper's
+    # citation count straight off the profile table (see the module
+    # docstring) - no per-publication fill() needed or wanted.
+    author = scholarly.fill(author_stub, sections=["basics", "publications", "indices"])
 
-    This never raises: proxy sourcing is unpredictable enough that it can
-    fail in ways that aren't reliably turned into a clean boolean or a
-    single documented exception type - `_scrape_candidate_proxies()`
-    already catches `requests`' own `RequestException`, but an uncaught
-    exception from anywhere in this function would abort the whole
-    sync-content.yml job (repos and Bluesky steps included), not just this
-    one file, so everything below is wrapped accordingly rather than
-    trusting any single call to fail cleanly.
+    by_title: dict[str, int] = {}
+    for pub in author.get("publications", []):
+        title = (pub.get("bib", {}).get("title") or "").strip()
+        if title:
+            by_title[normalise(title)] = pub.get("num_citations", 0)
+
+    if not by_title:
+        raise RuntimeError("Google Scholar returned no publications")
+
+    metrics = {
+        "citations": author.get("citedby", 0),
+        "hIndex": author.get("hindex", 0),
+        "i10Index": author.get("i10index", 0),
+    }
+    return by_title, metrics
+
+
+def fetch_from_google_scholar() -> tuple[dict[str, int], dict, str] | None:
+    """Returns (normalised title -> citation count, metrics dict, a short
+    "how" tag for the success message - "direct, no proxy" or "via
+    free-proxy fallback"), or None if Google Scholar couldn't be reached
+    this run, direct or via the fallback. On failure this already writes
+    sync-status.json with a plain-English reason - see write_status()
+    above for why that exists. On success, writing sync-status.json is
+    left to main() below, once it knows how many publications actually
+    matched a local entry, but the "how" tag returned here still needs to
+    survive into that message - see main().
+
+    This never raises: everything below is wrapped so that an unexpected
+    failure anywhere - proxy sourcing included, which is unpredictable
+    enough that it doesn't reliably fail with one clean exception type -
+    can't abort the whole sync-content.yml job, just this one file.
     """
     try:
         from scholarly import ProxyGenerator, scholarly
@@ -296,44 +334,37 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict] | None:
         print(f"scholarly is not usable ({exc}); skipping Google Scholar.", file=sys.stderr)
         return None
 
+    # Primary path: no proxy at all. Only expected to work from a
+    # residential IP - see the module docstring for why this now runs on
+    # a self-hosted runner rather than GitHub's own.
+    try:
+        by_title, metrics = _fetch_author(scholarly)
+        return by_title, metrics, "direct, no proxy"
+    except Exception as direct_exc:  # noqa: BLE001 - anything here just means "try the fallback"
+        direct_reason = str(direct_exc) or type(direct_exc).__name__
+
+    # Fallback: a scraped free proxy. Kept for resilience even though it
+    # never once got past scholarly's own liveness check in testing from
+    # a GitHub-hosted runner - see the module docstring for why that
+    # evidence is about the old runner's IP, not this code path, and why
+    # it's still worth keeping: it only runs at all once the direct
+    # attempt above has already failed.
     try:
         pg = ProxyGenerator()
         proxy_url, proxy_status = _find_working_proxy(pg)
         if not proxy_url:
-            write_status("failed", f"no working free proxy this run: {proxy_status}")
-            print(f"Could not find a working free proxy this run ({proxy_status}); skipping Google Scholar.", file=sys.stderr)
+            write_status("failed", f"direct fetch failed ({direct_reason}); no working free proxy either: {proxy_status}")
+            print(f"Direct fetch failed ({direct_reason}); could not find a working free proxy either ({proxy_status}); skipping Google Scholar.", file=sys.stderr)
             return None
         # Pass pg twice so *every* request goes through the proxy.
         scholarly.use_proxy(pg, pg)
-
-        author_stub = scholarly.search_author_id(SCHOLAR_ID)
-        # One request: the "publications" section already carries each
-        # paper's citation count straight off the profile table (see the
-        # module docstring) - no per-publication fill() needed or wanted.
-        author = scholarly.fill(author_stub, sections=["basics", "publications", "indices"])
-
-        by_title: dict[str, int] = {}
-        for pub in author.get("publications", []):
-            title = (pub.get("bib", {}).get("title") or "").strip()
-            if title:
-                by_title[normalise(title)] = pub.get("num_citations", 0)
-    except Exception as exc:  # noqa: BLE001 - free-proxy failure modes are varied and unpredictable
-        write_status("failed", f"error while fetching from Google Scholar: {exc}")
-        print(f"Could not reach Google Scholar this run ({exc}).", file=sys.stderr)
+        by_title, metrics = _fetch_author(scholarly)
+    except Exception as proxy_exc:  # noqa: BLE001 - proxy failure modes are varied and unpredictable
+        write_status("failed", f"direct fetch failed ({direct_reason}); proxy fetch also failed ({proxy_exc})")
+        print(f"Could not reach Google Scholar this run, direct or via proxy ({direct_reason}; {proxy_exc}).", file=sys.stderr)
         return None
 
-    if not by_title:
-        write_status("failed", "a proxy worked but Google Scholar returned no publications this run")
-        print("Google Scholar returned no publications this run.", file=sys.stderr)
-        return None
-
-    metrics = {
-        "citations": author.get("citedby", 0),
-        "hIndex": author.get("hindex", 0),
-        "i10Index": author.get("i10index", 0),
-    }
-    write_status("ok", f"fetched {len(by_title)} publications from Google Scholar")
-    return by_title, metrics
+    return by_title, metrics, "via free-proxy fallback"
 
 
 def main() -> int:
@@ -341,7 +372,7 @@ def main() -> int:
     if result is None:
         print("Could not reach Google Scholar this run; keeping existing data.", file=sys.stderr)
         return 0
-    by_title, metrics_totals = result
+    by_title, metrics_totals, source = result
 
     if not PUB_PATH.exists():
         write_status("failed", "publications.json not found in this checkout")
@@ -363,8 +394,8 @@ def main() -> int:
     metrics = {**metrics_totals, "updated": datetime.date.today().isoformat()}
     METRICS_PATH.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
 
-    write_status("ok", f"updated {updated}/{len(publications)} publications")
-    print(f"Updated citation counts for {updated}/{len(publications)} publications, from Google Scholar.")
+    write_status("ok", f"updated {updated}/{len(publications)} publications ({source})")
+    print(f"Updated citation counts for {updated}/{len(publications)} publications, from Google Scholar ({source}).")
     return 0
 
 
