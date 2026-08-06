@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd LaunchAgent for scripts/sync_publications_local.sh - see the
+  README's Automation section for what this does and why, and for the
+  one-time install steps. Runs daily at 06:00 *local* time (adjust the
+  Hour/Minute below to taste; unlike the old GitHub Actions cron this
+  isn't tied to UTC any more).
+
+  This file is a copy kept in the repo for reference and easy re-install;
+  the copy that actually matters is the one under
+  ~/Library/LaunchAgents/, which is what launchd itself reads. Keep the
+  two in sync by hand if you ever edit one.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.cenk-celik.sync-publications</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/cenkcelik/Documents/GitHub/cenk-celik.github.io/scripts/sync_publications_local.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Only runs on its schedule, not immediately every time this is
+         (re)loaded - e.g. at every login. Trigger a one-off test run
+         with `launchctl kickstart` instead (see the README). -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/cenkcelik/Library/Logs/cenk-celik-sync-publications.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/cenkcelik/Library/Logs/cenk-celik-sync-publications.log</string>
+</dict>
+</plist>

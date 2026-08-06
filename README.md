@@ -1,6 +1,6 @@
 # cenk-celik.github.io
 
-Cenk Celik's academic website — built with [Astro](https://astro.build), deployed on GitHub Pages, kept up to date by GitHub Actions. This document is the full reference: architecture, why it's built this way, how to edit content day to day, and how the automation works.
+Cenk Celik's academic website — built with [Astro](https://astro.build), deployed on GitHub Pages, kept up to date by a mix of GitHub Actions and a local scheduled script. This document is the full reference: architecture, why it's built this way, how to edit content day to day, and how the automation works.
 
 ## Contents
 
@@ -27,12 +27,14 @@ GitHub Pages deployment is native: `astro build` outputs static HTML/CSS to `dis
 ├── .github/
 │   ├── workflows/
 │   │   ├── deploy.yml          # build + deploy to GitHub Pages, on every push to main
-│   │   └── sync-content.yml    # daily: refresh publications, software stats, Bluesky feed
+│   │   └── sync-content.yml    # daily: refresh software stats and Bluesky feed
 │   └── dependabot.yml          # weekly dependency PRs (npm, pip, GitHub Actions)
-├── scripts/                    # Python automation, run locally or by sync-content.yml
+├── scripts/                    # Python automation, run locally, by sync-content.yml, or (publications) by launchd
 │   ├── fetch_publications.py
 │   ├── fetch_repos.py
-│   └── fetch_bluesky.py
+│   ├── fetch_bluesky.py
+│   ├── sync_publications_local.sh              # invoked by the .plist below - see Automation
+│   └── io.cenk-celik.sync-publications.plist    # launchd schedule for fetch_publications.py
 ├── public/                     # served as-is: cv.pdf, favicon, robots.txt, og-image.png
 ├── src/
 │   ├── content.config.ts       # schema for every Markdown collection below
@@ -119,9 +121,26 @@ Google Scholar has no official API, and blocks or CAPTCHAs almost every automate
 
 What that leaves is a machine you control, on an ordinary residential connection that doesn't carry the cloud-IP signal Google Scholar and free proxies both reject. The script itself is already written for this: it asks Google Scholar directly first, and only falls back to a scraped free proxy if that fails. Each run costs about two requests total: the citation count for every paper is read straight off the author's own profile page (one request), rather than by opening each publication's own page as earlier versions of this script did — the `scholarly` maintainers note that per-publication scraping specifically is what free proxies essentially never get past. When Google Scholar still can't be reached, direct or via the fallback, the script leaves the existing data untouched rather than falling back to another source, so every citation count on the site always traces back to Google Scholar.
 
-**Not currently automated.** A GitHub Actions self-hosted runner was tried and reverted: it would have made this a machine you control, but only by registering it to accept jobs dispatched by this (public) repository's own Actions system — a real trade-off, not one to take on lightly, and not one that was surfaced clearly enough before it was first suggested. Until a replacement is in place, run it by hand (see [Local development](#local-development) below) whenever you want citation counts refreshed; see [Known limitations](#known-limitations) for the options being weighed.
+**Runs from your own Mac, on a schedule, without going through GitHub Actions at all.** A GitHub Actions self-hosted runner was tried first and reverted: it would have given this a residential IP too, but only by registering your Mac to accept jobs dispatched by this (public) repository's own Actions system — a real trade-off, and not one that was surfaced clearly enough before it was first suggested. `scripts/sync_publications_local.sh`, scheduled by a `launchd` LaunchAgent (`scripts/io.cenk-celik.sync-publications.plist`), avoids that entirely: nothing here is triggered remotely, it's a fixed script that runs on a timer you control, the same trust model as anything else already running on your machine. See [Local scheduling setup](#local-scheduling-setup) below.
 
 Each entry in `publications.json` is matched by normalised title, and only its `citations` field is updated — title, authors, venue, type, DOI, links and `selected` stay exactly as hand-curated. New publications are **not** auto-added (Google Scholar occasionally splits one real paper into two records - e.g. a preprint indexed separately from its published version - which makes auto-adding risky), so add new entries by hand; the next sync then keeps their citation count current. The script is still **keep-last-good**: if Google Scholar can't be reached this run, it logs a warning and exits without touching the data files.
+
+### Local scheduling setup
+One-time and manual, and only needed for publications — `fetch_repos.py` and `fetch_bluesky.py` stay on GitHub Actions and need nothing extra.
+
+1. Both files already live in `scripts/`: `sync_publications_local.sh` (does the actual work: pulls, runs `fetch_publications.py`, commits and pushes if anything changed) and `io.cenk-celik.sync-publications.plist` (tells `launchd` when to run it). The `.plist` already points at this repo's real path and is executable; there's nothing to fill in.
+2. Install it by copying the plist into `~/Library/LaunchAgents/` and loading it:
+   ```bash
+   cp scripts/io.cenk-celik.sync-publications.plist ~/Library/LaunchAgents/
+   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.cenk-celik.sync-publications.plist
+   ```
+   (On older macOS versions without `bootstrap`, use `launchctl load ~/Library/LaunchAgents/io.cenk-celik.sync-publications.plist` instead.)
+3. It's scheduled for 06:00 **local** time by default — unlike the old GitHub Actions cron this is no longer tied to UTC. To change it, edit the `Hour`/`Minute` values in the copy under `~/Library/LaunchAgents/` (not just the one in `scripts/`, which `launchd` never reads directly), then re-run the `bootstrap`/`load` command above.
+4. To test without waiting for the schedule: `launchctl kickstart gui/$(id -u)/io.cenk-celik.sync-publications`, then check `~/Library/Logs/cenk-celik-sync-publications.log` for what happened.
+5. Your Mac needs to be **on, awake and connected to the internet at the scheduled time** for it to fire — `launchd` runs it as soon as possible after that if the Mac was asleep, rather than skipping the day, but a Mac that's fully shut down or logged out (not just asleep) at the scheduled time will miss that day's run entirely with nothing queued to catch up.
+6. To stop it: `launchctl bootout gui/$(id -u)/io.cenk-celik.sync-publications` (or `launchctl unload ...` on older macOS), then optionally delete the file from `~/Library/LaunchAgents/`.
+
+Because this never registers with GitHub Actions in any form, none of the self-hosted-runner security trade-off applies: there's no remote dispatch surface at all, just a local schedule running a script that already lives in this repo.
 
 ### Software stats (`scripts/fetch_repos.py`)
 Plain GitHub REST API calls (unauthenticated is enough for a handful of public repos; in Actions, the built-in `GITHUB_TOKEN` is used automatically to raise the rate limit). Same keep-last-good behaviour per repository.
@@ -130,7 +149,12 @@ Plain GitHub REST API calls (unauthenticated is enough for a handful of public r
 Bluesky's public AT Protocol AppView endpoint (`public.api.bsky.app`) needs no login or token for a public profile. The script snapshots the latest posts into `src/content/bluesky/cache.json`, which the homepage reads at build time — so the homepage never makes a live network call itself (faster, and immune to Bluesky being briefly down). Reposts are shown with a small "reposted from" label rather than filtered out, since original posts are infrequent enough that filtering them out could leave the section thin.
 
 ### Schedule
-`.github/workflows/sync-content.yml` runs `fetch_repos.py` and `fetch_bluesky.py` once daily on a GitHub-hosted runner, and commits `src/content/{repos,bluesky}` if anything changed — that commit lands on `main` and triggers `deploy.yml`, so the live site picks up updated stars or fresh posts with no manual step. It can also be run on demand from the Actions tab (`workflow_dispatch`). `fetch_publications.py` is not currently part of this workflow — see Publications above.
+Two independent schedules, each committing only the files it touched:
+
+- `.github/workflows/sync-content.yml` runs `fetch_repos.py` and `fetch_bluesky.py` once daily on a GitHub-hosted runner. Can also be run on demand from the Actions tab (`workflow_dispatch`).
+- `scripts/sync_publications_local.sh` runs `fetch_publications.py` once daily via a `launchd` LaunchAgent on your own Mac — see [Local scheduling setup](#local-scheduling-setup) above.
+
+Either one landing a commit on `main` triggers `deploy.yml`, so the live site picks up new papers, updated stars or fresh posts with no manual step regardless of which schedule produced the change.
 
 ### Dependencies
 `.github/dependabot.yml` opens grouped weekly PRs for npm, pip (`/scripts`) and the GitHub Actions themselves, with minor/patch bumps grouped into one PR to keep review low-effort; major bumps still arrive individually since they're the ones worth actually reading.
@@ -163,4 +187,4 @@ No custom domain is configured — the site serves from `cenk-celik.github.io` a
 
 ## Known limitations
 
-- **Google Scholar sync is not currently automated.** It needs to run from a residential IP (see Publications above), which ruled out GitHub-hosted runners; a self-hosted runner was tried instead and reverted, because that specifically means registering a machine you control to accept jobs dispatched by this repository's own GitHub Actions — safe in principle if the workflow that targets it never triggers on `pull_request`, but a real trade-off on a public repository that deserved more upfront discussion than it got. Options still open, none decided yet: a plain scheduled script on your own machine that never touches GitHub Actions at all (keeps automation, avoids that specific trade-off entirely), running the script by hand occasionally, or leaving citation counts as a manual, infrequent update. Until one is chosen, citation counts only change when `python scripts/fetch_publications.py` is run by hand. They're otherwise **keep-last-good**: any day Google Scholar can't be reached, direct or via the free-proxy fallback, counts are simply left as they were rather than sourced elsewhere, so every number on the site always traces back to Google Scholar.
+- **Google Scholar sync depends on your own Mac staying on and awake at the scheduled time**, not GitHub's infrastructure. It needs to run from a residential IP (see Publications above), which ruled out GitHub-hosted runners; a GitHub Actions self-hosted runner would also have worked, but only by registering your Mac to accept jobs dispatched by this repository's own (public) Actions system — a real trade-off, so this uses a plain local `launchd` schedule instead, which never touches GitHub Actions at all. The cost of that choice: if your Mac is asleep at the scheduled time, `launchd` runs it as soon as possible afterwards; if it's fully shut down or logged out, that day's run is simply missed, with nothing to catch up later the way a queued GitHub Actions job would. Citation counts are otherwise **keep-last-good**: any day Google Scholar can't be reached, direct or via the free-proxy fallback, counts are simply left as they were rather than sourced elsewhere, so every number on the site always traces back to Google Scholar.

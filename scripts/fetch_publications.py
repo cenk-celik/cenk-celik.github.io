@@ -3,13 +3,22 @@
 Refresh citation counts in publications.json and metrics.json.
 
 Source: Google Scholar, via the `scholarly` library - no account, no API
-key, no registration with any website. Runs on a self-hosted GitHub
-Actions runner (see the `sync-publications` job in
-.github/workflows/sync-content.yml), not GitHub's own hosted runners -
-that's the load-bearing fact behind everything else in this docstring, so
-it's worth stating first: GitHub-hosted runner IPs are well-known,
-recognisable cloud/datacenter ranges, and both Google Scholar directly and
-the free proxies tried below as a workaround reject that pattern almost
+key, no registration with any website. Invoked by a plain scheduled
+script on a machine you control (see scripts/sync_publications_local.sh
+and its accompanying launchd .plist), not GitHub Actions - a self-hosted
+GitHub Actions runner was tried first and reverted, because that
+specifically means registering this machine to accept jobs dispatched by
+this (public) repository's own Actions system, which GitHub's own docs
+recommend against outside private repos. A plain local schedule sidesteps
+that entirely: nothing here is triggered remotely, this is just a fixed
+script that runs on a timer, same trust model as anything else already on
+this machine.
+
+The reason either approach was ever necessary is the same, and it's the
+load-bearing fact behind everything else in this docstring, so it's worth
+stating clearly: GitHub-hosted runner IPs are well-known, recognisable
+cloud/datacenter ranges, and both Google Scholar directly and the free
+proxies tried below as a workaround reject that pattern almost
 universally in practice (evidence below). An ordinary residential
 connection doesn't carry that signal.
 
@@ -20,9 +29,9 @@ fails does this fall back to the free-proxy machinery below
 (`_find_working_proxy()`, `_scrape_candidate_proxies()`) - kept for
 resilience, not because it's proven to work. It never once got a proxy
 past scholarly's own liveness check in testing from a GitHub-hosted
-runner, but that evidence is about the old runner's IP range, not this
-code path itself, and a fallback that runs only after the direct attempt
-already failed costs nothing on the days that attempt succeeds.
+runner, but that evidence is about GitHub-hosted runners' IP range, not
+this code path itself, and a fallback that runs only after the direct
+attempt already failed costs nothing on the days that attempt succeeds.
 
 Earlier approaches, roughly in the order tried and dropped:
 
@@ -59,9 +68,13 @@ Earlier approaches, roughly in the order tried and dropped:
    IP that failed, consistent with proxies refusing traffic that looks
    like it's coming from a datacenter rather than a real residential user.
 
-That last finding is why this moved to a self-hosted runner rather than a
-sixth round of parameter tuning: the evidence pointed at the runner's own
-IP range as the actual constraint, not at anything tunable in code.
+That last finding is why this moved off GitHub-hosted runners entirely
+rather than a sixth round of parameter tuning: the evidence pointed at
+the runner's own IP range as the actual constraint, not at anything
+tunable in code. (A self-hosted GitHub Actions runner was the first way
+this was done - see git history - reverted once it was clear that meant
+registering this machine to accept remotely dispatched jobs on a public
+repo. A plain local schedule gets the same residential IP without that.)
 
 Each proxy candidate in the fallback path is still handed to scholarly's
 own `SingleProxy()` before being trusted - worth being precise about what
@@ -325,7 +338,11 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict, str] | None:
     This never raises: everything below is wrapped so that an unexpected
     failure anywhere - proxy sourcing included, which is unpredictable
     enough that it doesn't reliably fail with one clean exception type -
-    can't abort the whole sync-content.yml job, just this one file.
+    can't surface as an unhandled traceback. main() always gets a clean
+    None or a real result back and always exits 0 either way, so
+    whatever's invoking this script (scripts/sync_publications_local.sh)
+    can tell "ran and found nothing to update" apart from "crashed"
+    just from the exit code, without parsing output.
     """
     try:
         from scholarly import ProxyGenerator, scholarly
@@ -335,8 +352,9 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict, str] | None:
         return None
 
     # Primary path: no proxy at all. Only expected to work from a
-    # residential IP - see the module docstring for why this now runs on
-    # a self-hosted runner rather than GitHub's own.
+    # residential IP - see the module docstring for why this now runs
+    # from a local scheduled script on an ordinary home connection rather
+    # than any flavour of GitHub Actions runner.
     try:
         by_title, metrics = _fetch_author(scholarly)
         return by_title, metrics, "direct, no proxy"
@@ -346,9 +364,9 @@ def fetch_from_google_scholar() -> tuple[dict[str, int], dict, str] | None:
     # Fallback: a scraped free proxy. Kept for resilience even though it
     # never once got past scholarly's own liveness check in testing from
     # a GitHub-hosted runner - see the module docstring for why that
-    # evidence is about the old runner's IP, not this code path, and why
-    # it's still worth keeping: it only runs at all once the direct
-    # attempt above has already failed.
+    # evidence is about GitHub-hosted runners' IP range, not this code
+    # path, and why it's still worth keeping: it only runs at all once
+    # the direct attempt above has already failed.
     try:
         pg = ProxyGenerator()
         proxy_url, proxy_status = _find_working_proxy(pg)
