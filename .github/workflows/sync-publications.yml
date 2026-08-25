@@ -1,0 +1,53 @@
+name: Sync publications
+
+# Keeps publications.json's list of publications current - checks
+# Crossref weekly (via ORCID, see scripts/fetch_publications.py) and
+# adds any genuinely new entries automatically. Weekly rather than daily
+# because a new publication appearing is a rare event, unlike the daily
+# repos/Bluesky sync in sync-content.yml.
+#
+# Ordinary GitHub-hosted runner, no self-hosted infrastructure needed:
+# Crossref is a plain public REST API with no bot detection to work
+# around, unlike Google Scholar (the source this replaced - see git
+# history and the script's own module docstring for that whole story).
+on:
+  schedule:
+    - cron: "0 6 * * 1" # 06:00 UTC every Monday
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "sync-publications"
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install script dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Check Crossref for new publications
+        run: python scripts/fetch_publications.py
+
+      - name: Commit changes if any
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/content/publications
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "chore: sync publications"
+            git push
+          fi

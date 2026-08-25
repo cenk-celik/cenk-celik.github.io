@@ -34,7 +34,6 @@ const typeLabel: Record<Publication['type'], string> = {
     <p class="pub-venue">
       <span class="tag">{typeLabel[pub.type]}</span>
       <span class="venue-name">{pub.venue}</span>
-      {pub.citations ? <span class="citations">· {pub.citations} citation{pub.citations === 1 ? '' : 's'}</span> : null}
     </p>
     {
       !compact && (
@@ -123,10 +122,6 @@ const typeLabel: Record<Publication['type'], string> = {
 
   .venue-name {
     font-style: italic;
-  }
-
-  .citations {
-    color: var(--color-text-faint);
   }
 
   .pub-links {

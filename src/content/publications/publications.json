@@ -11,7 +11,6 @@
     "url": "https://doi.org/10.1186/s13073-026-01711-0",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 0,
     "selected": true
   },
   {
@@ -26,7 +25,6 @@
     "url": "https://febs.onlinelibrary.wiley.com/doi/abs/10.1002/1878-0261.70100",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 2,
     "selected": true
   },
   {
@@ -41,7 +39,6 @@
     "url": "https://doi.org/10.7554/eLife.95113",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 23,
     "selected": true
   },
   {
@@ -56,7 +53,6 @@
     "url": "https://doi.org/10.1038/s41467-022-33630-0",
     "pubmedUrl": "https://www.ncbi.nlm.nih.gov/pubmed/36261415",
     "preprintUrl": null,
-    "citations": 25,
     "selected": true
   },
   {
@@ -71,7 +67,6 @@
     "url": "https://doi.org/10.1016/j.plipres.2022.101198",
     "pubmedUrl": "https://www.ncbi.nlm.nih.gov/pubmed/36379317",
     "preprintUrl": null,
-    "citations": 219,
     "selected": false
   },
   {
@@ -86,7 +81,6 @@
     "url": "https://doi.org/10.1126/sciadv.aeb5297",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 2,
     "selected": true
   },
   {
@@ -101,7 +95,6 @@
     "url": "https://doi.org/10.1016/j.chom.2026.01.002",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 2,
     "selected": false
   },
   {
@@ -116,7 +109,6 @@
     "url": "https://doi.org/10.1242/dmm.050724",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 3,
     "selected": false
   },
   {
@@ -131,7 +123,6 @@
     "url": "https://doi.org/10.1101/2025.05.30.656960",
     "pubmedUrl": null,
     "preprintUrl": "https://doi.org/10.1101/2025.05.30.656960",
-    "citations": 1,
     "selected": false
   },
   {
@@ -146,7 +137,6 @@
     "url": "https://doi.org/10.1101/2025.09.24.678189",
     "pubmedUrl": null,
     "preprintUrl": "https://doi.org/10.1101/2025.09.24.678189",
-    "citations": 0,
     "selected": false
   },
   {
@@ -161,7 +151,6 @@
     "url": "https://doi.org/10.1186/s13287-020-1566-5",
     "pubmedUrl": "https://www.ncbi.nlm.nih.gov/pubmed/32014064",
     "preprintUrl": null,
-    "citations": 86,
     "selected": false
   },
   {
@@ -176,7 +165,6 @@
     "url": "https://doi.org/10.1101/2024.08.16.608311",
     "pubmedUrl": null,
     "preprintUrl": "https://doi.org/10.1101/2024.08.16.608311",
-    "citations": 1,
     "selected": false
   },
   {
@@ -191,7 +179,6 @@
     "url": "https://doi.org/10.1016/j.actbio.2020.10.039",
     "pubmedUrl": "https://www.ncbi.nlm.nih.gov/pubmed/33130304",
     "preprintUrl": null,
-    "citations": 28,
     "selected": false
   },
   {
@@ -206,7 +193,6 @@
     "url": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=zidMl6YAAAAJ&citation_for_view=zidMl6YAAAAJ:5nxA0vEk-isC",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 0,
     "selected": false
   },
   {
@@ -221,7 +207,6 @@
     "url": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=zidMl6YAAAAJ&citation_for_view=zidMl6YAAAAJ:kNdYIx-mwKoC",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 0,
     "selected": false
   },
   {
@@ -236,7 +221,6 @@
     "url": "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=zidMl6YAAAAJ&citation_for_view=zidMl6YAAAAJ:hqOjcs7Dif8C",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 0,
     "selected": false
   },
   {
@@ -251,7 +235,6 @@
     "url": "https://doi.org/10.1002/elsc.201900009",
     "pubmedUrl": "https://www.ncbi.nlm.nih.gov/pubmed/32624962",
     "preprintUrl": null,
-    "citations": 8,
     "selected": false
   },
   {
@@ -266,7 +249,6 @@
     "url": "https://doi.org/10.1007/978-981-10-6077-9_12",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 7,
     "selected": false
   },
   {
@@ -281,7 +263,6 @@
     "url": "https://www.igi-global.com/gateway/chapter/146503",
     "pubmedUrl": null,
     "preprintUrl": null,
-    "citations": 4,
     "selected": false
   }
 ]

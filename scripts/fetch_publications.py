@@ -1,121 +1,77 @@
 #!/usr/bin/env python3
 """
-Refresh citation counts in publications.json and metrics.json.
+Keep publications.json's *list* of publications current - add genuinely
+new ones automatically, weekly. Nothing here touches citation counts,
+h-index or i10-index any more: that whole approach (Google Scholar via
+`scholarly`, first through GitHub-hosted runners, then a scraped free
+proxy, then a self-hosted runner, then a local scheduled script) never
+once reliably worked in production and has been dropped entirely - see
+git history if the detail is ever useful again. metrics.json is gone;
+the publications page no longer shows citation counts anywhere.
 
-Source: Google Scholar, via the `scholarly` library - no account, no API
-key, no registration with any website. Invoked by a plain scheduled
-script on a machine you control (see scripts/sync_publications_local.sh
-and its accompanying launchd .plist), not GitHub Actions - a self-hosted
-GitHub Actions runner was tried first and reverted, because that
-specifically means registering this machine to accept jobs dispatched by
-this (public) repository's own Actions system, which GitHub's own docs
-recommend against outside private repos. A plain local schedule sidesteps
-that entirely: nothing here is triggered remotely, this is just a fixed
-script that runs on a timer, same trust model as anything else already on
-this machine.
+Source: Crossref's REST API (api.crossref.org), filtered to this site
+owner's ORCID iD - no account, no API key, no registration, and no bot
+detection to fight: this is a plain, documented, intentionally
+automation-friendly public API, not a scrape. That's the whole reason
+this can run on an ordinary GitHub-hosted Actions runner again rather
+than needing a residential IP: Crossref doesn't care what kind of
+machine asks it a question. Google Scholar has no equivalent - this
+script only exists at all because Crossref does.
 
-The reason either approach was ever necessary is the same, and it's the
-load-bearing fact behind everything else in this docstring, so it's worth
-stating clearly: GitHub-hosted runner IPs are well-known, recognisable
-cloud/datacenter ranges, and both Google Scholar directly and the free
-proxies tried below as a workaround reject that pattern almost
-universally in practice (evidence below). An ordinary residential
-connection doesn't carry that signal.
+A request to `/works?filter=orcid:<id>` returns every work Crossref has
+on file naming that ORCID iD as an author - for this ORCID iD, 20 records
+as of writing, checked directly: some journal articles, some preprints,
+and some things that are emphatically not publications in the sense this
+site means - eLife specifically registers a DOI for each public review
+and author response as well as the paper itself, and Crossref's `type`
+for those is `peer-review` or `posted-content` with no useful distinction
+from a real preprint at the `type` level alone - and protocols.io lab
+protocols use `posted-content` too, for a third thing that isn't a
+preprint either. That's dealt with by _classify() below rather than
+trusted away: an explicit type allowlist, a DOI-prefix check for
+protocols.io specifically, and a title-prefix check for the specific
+eLife/PREreview boilerplate ("Author response:", "Editor's evaluation",
+"Reviewer report", "Decision letter", "Public review") that shows up
+under `posted-content` alongside genuine preprints.
 
-Given that, the primary path here (`_fetch_author()` called with no proxy
-configured, in `fetch_from_google_scholar()`) is the simplest one
-possible: ask scholarly for the author's profile directly. Only if that
-fails does this fall back to the free-proxy machinery below
-(`_find_working_proxy()`, `_scrape_candidate_proxies()`) - kept for
-resilience, not because it's proven to work. It never once got a proxy
-past scholarly's own liveness check in testing from a GitHub-hosted
-runner, but that evidence is about GitHub-hosted runners' IP range, not
-this code path itself, and a fallback that runs only after the direct
-attempt already failed costs nothing on the days that attempt succeeds.
+Matching against what's already in publications.json is DOI-first (every
+hand-curated entry already has one, bar a couple of conference abstracts
+this script never touches anyway) since that's exact and unambiguous,
+unlike title text. A DOI already present means nothing to do. A DOI
+that's new but whose normalised title matches an existing entry usually
+means the same paper under a second DOI - most often a preprint that has
+since been formally published, since Crossref keeps the preprint's own
+DOI live and searchable even after that happens. Auto-adding that as a
+second, visually duplicate-looking entry is exactly the failure mode an
+earlier version of this script was written to avoid, so it still is:
+those cases are left out of publications.json and named in
+sync-status.json instead, for a quick manual look - typically just
+updating the existing entry's own `doi`/`url` by hand from preprint to
+journal version, a one-line edit.
 
-Earlier approaches, roughly in the order tried and dropped:
+Everything else that passes the type filter and doesn't match an
+existing DOI or title is a genuinely new publication and gets added
+automatically: title, authors (best-effort "initials surname" formatting
+to match this file's existing style, truncated to six names plus "et
+al." past ten), year, venue, doi/url, and a type guessed from Crossref's
+own `type`/`subtype` (`journal-article` -> "journal", `posted-content` ->
+"preprint", `book-chapter` -> "book-chapter", `proceedings-article` and
+`report` -> "journal", `monograph` -> "book-chapter"). `selected` is
+always false - featuring a paper on the homepage stays a deliberate,
+hand-made choice, never automatic. None of this is claimed to be
+perfect: "review" vs plain "journal", the exact author list for a
+twenty-author paper, a hand-written `venueAbbr` - all of that stays a
+judgement call this script doesn't try to make, same as it's always been
+for hand-added entries. Auto-added entries are a first draft, not a
+final one; touching them up by hand afterwards is normal, not a bug
+report.
 
-1. Scraping Google Scholar directly from a GitHub-hosted runner - blocked
-   outright, essentially every run.
-2. Paid/registered proxy or scraping-API services (ScraperAPI, Webshare,
-   SerpApi) - ruled out by request: no signup anywhere, free tier or not.
-3. `scholarly`'s own `ProxyGenerator.FreeProxies()` - broke outright, not
-   just "found a bad proxy", on two separate real bugs in its
-   `_fp_coroutine` the first two times this ran for real: a missing
-   `repeat` argument on its refill call once the first proxy batch ran
-   out (`free-proxy` made that required in 1.1.0; `scholarly` 1.7.11's
-   refill call never passed one), and a plain `list.pop()` with no
-   empty-list guard that crashes if a scrape ever turns up zero proxies -
-   exactly what a transient bad scrape looks like, so that path gets hit
-   precisely when it most needs not to crash.
-4. The `free-proxy` package's own `get()` - fixed both of the above, but
-   then reported zero candidate proxies found at all, ten attempts in a
-   row, on a real run, despite the source site being confirmed live (a
-   manual fetch at the same time returned a full table updated seconds
-   earlier). The one difference: `free-proxy` sends no User-Agent header
-   at all, one of the most commonly bot-filtered signatures there is.
-5. Scraping the proxy list directly with a realistic browser User-Agent
-   (`_scrape_candidate_proxies()` below, still in use as part of the
-   fallback) - this part worked, 300 real candidates every run since.
-   Actually using any of them kept failing regardless: 0 of 160
-   candidates tried, across two separate real runs (60 then 100, the
-   second with an 8-second timeout instead of scholarly's hardcoded 5, to
-   rule out "the timeout is just too tight"), ever passed scholarly's own
-   `SingleProxy()` check. Meanwhile this same workflow's other steps
-   (GitHub API, Bluesky) succeeded on every run in that period, so
-   GitHub Actions' general internet access was never the problem - it was
-   specifically relaying through a third-party proxy from a GitHub-hosted
-   IP that failed, consistent with proxies refusing traffic that looks
-   like it's coming from a datacenter rather than a real residential user.
-
-That last finding is why this moved off GitHub-hosted runners entirely
-rather than a sixth round of parameter tuning: the evidence pointed at
-the runner's own IP range as the actual constraint, not at anything
-tunable in code. (A self-hosted GitHub Actions runner was the first way
-this was done - see git history - reverted once it was clear that meant
-registering this machine to accept remotely dispatched jobs on a public
-repo. A plain local schedule gets the same residential IP without that.)
-
-Each proxy candidate in the fallback path is still handed to scholarly's
-own `SingleProxy()` before being trusted - worth being precise about what
-that actually checks: `_use_proxy()` -> `_check_proxy()`
-(scholarly/_proxy_generator.py) tests the proxy against
-`http://httpbin.org/ip` with a 5-second timeout, a general "is this proxy
-alive and does it forward requests" check. It is not scholar.google.com
-and was never Google-specific.
-
-Every publication's citation count is read straight off the author's own
-profile page (the same "Title / Cited by / Year" table you see on
-https://scholar.google.com/citations?user=<id>) as part of the one
-`scholarly.fill(author, ...)` call below - it is never fetched by opening
-each publication's own page. That used to happen here (one extra
-`scholarly.fill(pub)` request per paper), and per the scholarly
-maintainers it is specifically that per-publication scraping - not
-author-level scraping - that free proxies essentially never get away
-with (github.com/scholarly-python-package/scholarly, discussion #330:
-"FreeProxy is not at all an option if you are scraping publications ...
-but works mostly fine if you are scraping authors' info"). Dropping it
-also cuts a run from 1 + one-request-per-paper down to about two requests
-total (search + one profile page, since this author has well under the
-100-publication page size scholarly requests at once) - both fewer
-requests and each one far more likely to get through.
-
-Only citation counts are ever touched here - title, authors, venue, type,
-DOI, links and `selected` are hand-curated and left exactly as they are.
-New publications are not auto-added from Google Scholar: it occasionally
-splits one real paper into two records (e.g. a preprint indexed
-separately from its published version), so adding papers automatically
-risks creating duplicates. Add new entries to publications.json by hand;
-from the next run onwards this script keeps their citation count current.
-
-On failure (direct fetch blocked, and no free proxy got through either)
-this prints a warning and exits 0 without touching
-publications.json or metrics.json, so the site keeps building from the
-last known-good data ("keep-last-good"). It does still write
-sync-status.json (outcome + a plain-English reason) on every run,
-success or failure, so a silent failure is visible straight from `git
-log src/content/publications/sync-status.json` rather than only from a
-GitHub Actions log that needs a login to this repo to read.
+On failure (Crossref unreachable, or an unexpected response shape) this
+prints a warning and exits 0 without touching publications.json, so the
+site keeps building from the last known-good list ("keep-last-good"). It
+does still write sync-status.json (outcome + a plain-English reason) on
+every run, success or failure, so a silent failure is visible straight
+from `git log src/content/publications/sync-status.json`.
 
 Run manually with: python scripts/fetch_publications.py
 """
@@ -124,32 +80,93 @@ from __future__ import annotations
 
 import datetime
 import json
-import random
 import re
 import sys
 from pathlib import Path
 
-SCHOLAR_ID = "zidMl6YAAAAJ"
+ORCID_ID = "0000-0001-8301-0172"
+CROSSREF_URL = f"https://api.crossref.org/works?filter=orcid:{ORCID_ID}&rows=100&select=DOI,title,author,published,published-print,published-online,issued,created,container-title,institution,type,subtype"
+# A descriptive User-Agent with a contact address, per Crossref's own
+# etiquette (the "polite pool") - not required, but it's free reliability
+# and costs one line. See https://api.crossref.org (their own docs page).
+REQUEST_HEADERS = {"User-Agent": "cenk-celik.github.io publications sync (mailto:cenk.celik@proton.me)"}
 
 ROOT = Path(__file__).resolve().parent.parent
 PUB_PATH = ROOT / "src" / "content" / "publications" / "publications.json"
-METRICS_PATH = ROOT / "src" / "content" / "publications" / "metrics.json"
 STATUS_PATH = ROOT / "src" / "content" / "publications" / "sync-status.json"
+
+# Crossref `type` values worth treating as a publication for this site.
+# Deliberately excludes (among others actually seen on this ORCID iD's
+# own record): `peer-review` (eLife's public reviews), `journal` and
+# `book` (the container, not a work), `component`, `grant`, `dataset`.
+ALLOWED_CROSSREF_TYPES = {
+    "journal-article",
+    "book-chapter",
+    "posted-content",
+    "proceedings-article",
+    "report",
+    "monograph",
+}
+
+# `posted-content` covers genuine preprints *and* eLife/PREreview-style
+# review artefacts (author responses, editor's evaluations, decision
+# letters, public reviews) under the same Crossref `type`. Crossref's own
+# `subtype` field distinguishes these when present ("preprint" vs
+# anything else); this title-prefix list is the fallback for the records
+# that don't set `subtype` at all, based on the actual boilerplate titles
+# eLife uses for these artefacts.
+NON_PREPRINT_TITLE_PREFIXES = (
+    "author response",
+    "editor's evaluation",
+    "editors' evaluation",
+    "reviewer report",
+    "decision letter",
+    "public review",
+)
+
+CROSSREF_TYPE_TO_PUB_TYPE = {
+    "journal-article": "journal",
+    "book-chapter": "book-chapter",
+    "posted-content": "preprint",  # overridden for protocols.io - see _classify()
+    "proceedings-article": "journal",
+    "report": "journal",
+    "monograph": "book-chapter",
+}
+
+# protocols.io registers its own DOIs under `posted-content`, same
+# Crossref `type` as a genuine preprint - seen for real on this ORCID
+# iD's own record (a lab protocol already hand-listed here with `type:
+# "protocol"`). DOI prefix is a reliable way to tell them apart from an
+# actual preprint server; extend this if another protocol repository
+# ever shows up on this ORCID iD.
+PROTOCOL_DOI_PREFIXES = ("10.17504/",)  # protocols.io
 
 
 def normalise(title: str) -> str:
-    """A stable-ish key for matching the same paper across sources."""
+    """A stable-ish key for matching the same paper across sources.
+    Strips a trailing version suffix ("... v1", "... V2") first - seen for
+    real on this ORCID iD's own protocols.io entry, which Crossref titles
+    with a "v1" the hand-curated publications.json entry never had, and
+    which would otherwise defeat this exact dedup check."""
+    title = re.sub(r"\s+v\d+$", "", title.strip(), flags=re.IGNORECASE)
     return re.sub(r"[^a-z0-9]+", "", title.lower())
 
 
+def normalise_doi(doi: str) -> str:
+    """DOIs are case-insensitive and sometimes show up with a full URL
+    prefix; reduce to a bare lowercase DOI so comparisons are reliable."""
+    doi = doi.strip().lower()
+    for prefix in ("https://doi.org/", "http://doi.org/", "doi:"):
+        if doi.startswith(prefix):
+            doi = doi[len(prefix):]
+    return doi
+
+
 def write_status(outcome: str, message: str) -> None:
-    """Written on every run, success or failure alike - deliberately the
-    one thing this script still writes even when keep-last-good means
-    nothing else changes. Viewing a GitHub Actions log needs a login to
-    this repo; this doesn't - it's just a committed file, so a run that
-    quietly failed still leaves a plain-English reason behind in `git
-    log`/`git show` for whoever's debugging it (including a Claude
-    session with no GitHub credentials)."""
+    """Written on every run, success or failure alike - see git history
+    (this line survives from the previous approach) for why: a run that
+    quietly failed still leaves a plain-English reason in `git log`,
+    readable with no login to this repo, no GitHub Actions access."""
     status = {
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "outcome": outcome,
@@ -162,8 +179,8 @@ def format_publications(publications: list[dict]) -> str:
     """Serialise the same way the file has always been hand-formatted: one
     object per block, but each value (including the `authors` array) stays
     on a single line. Plain `json.dumps(..., indent=2)` would instead wrap
-    every `authors` list onto one line per name, turning a citation-count-only
-    update into a huge, unreviewable diff."""
+    every `authors` list onto one line per name, turning a small update
+    into a huge, unreviewable diff."""
     lines = ["["]
     for i, pub in enumerate(publications):
         lines.append("  {")
@@ -176,244 +193,194 @@ def format_publications(publications: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
-# --- Google Scholar, via scholarly direct-first, with a free-proxy fallback -
-
-PROXY_SOURCE_URLS = [
-    # Primary, then a fallback in case the first is unreachable or its
-    # markup changes out from under the #list selector below - same
-    # underlying data provider (free-proxy-list.net), different page.
-    "https://free-proxy-list.net/",
-    "https://www.sslproxies.org/",
-]
-# A real browser User-Agent, not the default `python-requests/x.y.z` one
-# requests sends when called with no headers - see the module docstring
-# for why that specific difference is the point of this function.
-PROXY_SCRAPE_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept-Language": "en-US,en;q=0.9",
-}
-
-# How many of the scraped candidates to test (via scholarly's own
-# SingleProxy check) before giving up. Free proxy lists have a high dead
-# rate at any given moment - most tools and guides on this put the share
-# that's actually alive and fast enough somewhere in the low tens of
-# percent - so treat this as "how many rolls of the dice", not "surely
-# one of the first few will work". 60 already came back 0/60 once for
-# real, against a confirmed-healthy 300-candidate scrape, which reads
-# more like "5 seconds is too tight a bar" (see the _TIMEOUT override in
-# _find_working_proxy) than "unlucky 60 in a row" - under a 5% chance of
-# that at even a pessimistic 5% true success rate. Raised alongside that
-# timeout fix so a genuinely low success rate still gets a fair number of
-# tries: at 5%, 100 gives roughly a 99.4% chance of at least one success.
-PROXY_ATTEMPTS = 100
+# --- Crossref -----------------------------------------------------------
 
 
-def _scrape_candidate_proxies() -> list[str]:
-    """Scrape a fresh list of candidate 'ip:port' proxies straight from
-    free-proxy-list.net (falling back to sslproxies.org, which is the
-    same underlying list under a different URL) using a normal browser
-    User-Agent - see the module docstring for why. Parses the same
-    `id="list"` table the `free-proxy` package itself targets, so this
-    is the same data, fetched more plainly.
+def _classify(item: dict, doi: str) -> tuple[str, str] | None:
+    """Returns (pub_type, venue) for a Crossref work worth listing on this
+    site, or None to skip it entirely. All of the "is this actually a
+    publication" judgement calls live here in one place, in order:
 
-    Returns whatever candidates were found (possibly empty if every
-    source failed or the table came back empty); doesn't filter or
-    validate them - that's SingleProxy()'s job in _find_working_proxy().
+    1. Type allowlist - drops peer-review, dataset, grant, and the
+       journal/book "container" records outright.
+    2. `posted-content` from protocols.io is a lab protocol, not a
+       preprint, despite sharing the same Crossref `type` - checked by
+       DOI prefix, the reliable signal (see PROTOCOL_DOI_PREFIXES above).
+    3. `posted-content` from anywhere else: Crossref's own `subtype` says
+       "preprint" or it doesn't, and when it doesn't say anything at all,
+       the title is checked against known non-preprint boilerplate
+       (eLife's public reviews and author responses) as a fallback.
     """
-    import requests
-    from bs4 import BeautifulSoup
+    crossref_type = item.get("type", "")
+    if crossref_type not in ALLOWED_CROSSREF_TYPES:
+        return None
 
-    for url in PROXY_SOURCE_URLS:
-        try:
-            resp = requests.get(url, headers=PROXY_SCRAPE_HEADERS, timeout=15)
-            resp.raise_for_status()
-        except requests.exceptions.RequestException:
-            continue  # try the next source URL
-        soup = BeautifulSoup(resp.text, "html.parser")
-        container = soup.find(id="list")
-        if not container:
+    if crossref_type == "posted-content" and doi.startswith(PROTOCOL_DOI_PREFIXES):
+        return "protocol", "Protocol"
+
+    if crossref_type == "posted-content":
+        subtype = (item.get("subtype") or "").strip().lower()
+        if subtype:
+            if subtype != "preprint":
+                return None
+        else:
+            title = ((item.get("title") or [""])[0] or "").strip().lower()
+            if title.startswith(NON_PREPRINT_TITLE_PREFIXES):
+                return None
+
+    pub_type = CROSSREF_TYPE_TO_PUB_TYPE.get(crossref_type, "journal")
+    venue = _guess_venue(item, pub_type, doi)
+    return pub_type, venue
+
+
+def _extract_year(item: dict) -> int | None:
+    for key in ("published", "published-print", "published-online", "issued", "created"):
+        parts = (item.get(key) or {}).get("date-parts")
+        if parts and parts[0] and parts[0][0]:
+            return int(parts[0][0])
+    return None
+
+
+def _format_authors(crossref_authors: list[dict]) -> list[str]:
+    formatted = []
+    for a in crossref_authors:
+        family = (a.get("family") or "").strip()
+        given = (a.get("given") or "").strip()
+        if family:
+            initials = " ".join(f"{part[0]}." for part in given.split() if part)
+            formatted.append(f"{initials} {family}".strip())
             continue
-        candidates = []
-        for row in container.find_all("tr")[1:]:  # [0] is the header row
-            cells = row.find_all("td")
-            if len(cells) >= 2:
-                ip = cells[0].get_text(strip=True)
-                port = cells[1].get_text(strip=True)
-                if ip and port:
-                    candidates.append(f"{ip}:{port}")
-        if candidates:
-            return candidates
-    return []
+        name = (a.get("name") or "").strip()  # consortium-style entries
+        if name:
+            formatted.append(name)
+    if len(formatted) > 10:
+        formatted = formatted[:6] + ["et al."]
+    return formatted
 
 
-def _find_working_proxy(pg) -> tuple[str | None, str]:
-    """Scrape a batch of candidate proxies and hand each to scholarly's
-    own SingleProxy(), up to PROXY_ATTEMPTS of them, until one passes -
-    see the module docstring for exactly what that check does (a general
-    proxy-alive check, not anything Google-specific) and why this scrapes
-    the source page itself rather than going through scholarly's
-    FreeProxies() or the free-proxy package.
-
-    Returns (proxy_url, "ok") on success, or (None, breakdown) on
-    failure. The breakdown separates "the scrape itself produced no
-    candidates at all" (every source URL failed, or the table came back
-    empty) from "candidates were found but none tried passed scholarly's
-    check" - those point at different problems (site/scrape health vs.
-    ordinary free-proxy attrition), and collapsing them into one message
-    is exactly what made the previous couple of rounds here slower than
-    they needed to be.
-    """
-    candidates = _scrape_candidate_proxies()
-    if not candidates:
-        return None, "the scrape itself returned zero candidate proxies (every source URL failed or came back empty)"
-
-    # scholarly hardcodes this check's timeout to 5 seconds
-    # (ProxyGenerator.__init__ sets self._TIMEOUT = 5) with no public way
-    # to configure it - not exposed as a constructor argument or a
-    # documented setting anywhere. 0/60 real candidates passing on the
-    # last run, right after fixing the scrape itself, points more at "5
-    # seconds is an unfair bar for a free proxy relaying a request to a
-    # second external site" than at "60 unlucky picks in a row" (at even
-    # a pessimistic 5% true success rate, that's under a 5% chance).
-    # Reaching past the public API for this specific attribute is a
-    # deliberate, documented trade-off, not an oversight - there's no
-    # other lever available without forking scholarly outright.
-    pg._TIMEOUT = 8
-
-    random.shuffle(candidates)
-    tried = candidates[:PROXY_ATTEMPTS]
-    for proxy in tried:
-        proxy_url = f"http://{proxy}"
-        if pg.SingleProxy(http=proxy_url, https=proxy_url):
-            return proxy_url, "ok"
-    breakdown = f"scraped {len(candidates)} candidates, tried {len(tried)} of them, none passed scholarly's own proxy check"
-    return None, breakdown
+def _slugify(text: str, max_len: int = 24) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:max_len].rstrip("-")
 
 
-def _fetch_author(scholarly) -> tuple[dict[str, int], dict]:
-    """Ask scholarly for the author's profile - one `search_author_id` +
-    one `fill()` call - using whatever proxy (or lack of one) is currently
-    configured on the `scholarly` module. Raises on any failure; the two
-    call sites in fetch_from_google_scholar() below each decide what that
-    means (direct failing means "try the proxy fallback"; proxy failing
-    means "give up this run").
-    """
-    author_stub = scholarly.search_author_id(SCHOLAR_ID)
-    # One request: the "publications" section already carries each paper's
-    # citation count straight off the profile table (see the module
-    # docstring) - no per-publication fill() needed or wanted.
-    author = scholarly.fill(author_stub, sections=["basics", "publications", "indices"])
-
-    by_title: dict[str, int] = {}
-    for pub in author.get("publications", []):
-        title = (pub.get("bib", {}).get("title") or "").strip()
-        if title:
-            by_title[normalise(title)] = pub.get("num_citations", 0)
-
-    if not by_title:
-        raise RuntimeError("Google Scholar returned no publications")
-
-    metrics = {
-        "citations": author.get("citedby", 0),
-        "hIndex": author.get("hindex", 0),
-        "i10Index": author.get("i10index", 0),
-    }
-    return by_title, metrics
+def _guess_venue(item: dict, pub_type: str, doi: str) -> str:
+    container = item.get("container-title") or []
+    if container and container[0].strip():
+        return container[0].strip()
+    if pub_type == "preprint":
+        # Crossref omits container-title for preprints. bioRxiv and
+        # medRxiv (both Cold Spring Harbor Laboratory) share the
+        # 10.1101/ prefix, which covers every preprint seen on this
+        # ORCID iD's record so far - a reasonable default, not a blind
+        # guess, but still worth a second glance for anything from a
+        # different preprint server.
+        if doi.startswith("10.1101/"):
+            return "bioRxiv"
+        institution = item.get("institution") or []
+        if institution and institution[0].get("name"):
+            return institution[0]["name"].strip()
+        return "Preprint"
+    return ""
 
 
-def fetch_from_google_scholar() -> tuple[dict[str, int], dict, str] | None:
-    """Returns (normalised title -> citation count, metrics dict, a short
-    "how" tag for the success message - "direct, no proxy" or "via
-    free-proxy fallback"), or None if Google Scholar couldn't be reached
-    this run, direct or via the fallback. On failure this already writes
-    sync-status.json with a plain-English reason - see write_status()
-    above for why that exists. On success, writing sync-status.json is
-    left to main() below, once it knows how many publications actually
-    matched a local entry, but the "how" tag returned here still needs to
-    survive into that message - see main().
+def _make_id(first_author_family: str, year: int, venue: str, existing_ids: set[str]) -> str:
+    base = re.sub(r"[^a-z0-9]+", "", first_author_family.lower()) or "pub"
+    venue_slug = _slugify(venue) or "work"
+    candidate = f"{base}{year}-{venue_slug}"
+    final, n = candidate, 2
+    while final in existing_ids:
+        final = f"{candidate}-{n}"
+        n += 1
+    return final
 
-    This never raises: everything below is wrapped so that an unexpected
-    failure anywhere - proxy sourcing included, which is unpredictable
-    enough that it doesn't reliably fail with one clean exception type -
-    can't surface as an unhandled traceback. main() always gets a clean
-    None or a real result back and always exits 0 either way, so
-    whatever's invoking this script (scripts/sync_publications_local.sh)
-    can tell "ran and found nothing to update" apart from "crashed"
-    just from the exit code, without parsing output.
-    """
+
+def fetch_crossref_works() -> list[dict] | None:
+    """Returns the raw list of Crossref work records for ORCID_ID, or
+    None if the request failed outright. Never raises."""
     try:
-        from scholarly import ProxyGenerator, scholarly
-    except ImportError as exc:
-        write_status("failed", f"scholarly is not usable ({exc}); skipped Google Scholar")
-        print(f"scholarly is not usable ({exc}); skipping Google Scholar.", file=sys.stderr)
+        import requests
+
+        resp = requests.get(CROSSREF_URL, headers=REQUEST_HEADERS, timeout=20)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["message"]["items"]
+    except Exception as exc:  # noqa: BLE001 - network/JSON-shape failures are varied
+        write_status("failed", f"could not fetch from Crossref: {exc}")
+        print(f"Could not fetch from Crossref ({exc}).", file=sys.stderr)
         return None
-
-    # Primary path: no proxy at all. Only expected to work from a
-    # residential IP - see the module docstring for why this now runs
-    # from a local scheduled script on an ordinary home connection rather
-    # than any flavour of GitHub Actions runner.
-    try:
-        by_title, metrics = _fetch_author(scholarly)
-        return by_title, metrics, "direct, no proxy"
-    except Exception as direct_exc:  # noqa: BLE001 - anything here just means "try the fallback"
-        direct_reason = str(direct_exc) or type(direct_exc).__name__
-
-    # Fallback: a scraped free proxy. Kept for resilience even though it
-    # never once got past scholarly's own liveness check in testing from
-    # a GitHub-hosted runner - see the module docstring for why that
-    # evidence is about GitHub-hosted runners' IP range, not this code
-    # path, and why it's still worth keeping: it only runs at all once
-    # the direct attempt above has already failed.
-    try:
-        pg = ProxyGenerator()
-        proxy_url, proxy_status = _find_working_proxy(pg)
-        if not proxy_url:
-            write_status("failed", f"direct fetch failed ({direct_reason}); no working free proxy either: {proxy_status}")
-            print(f"Direct fetch failed ({direct_reason}); could not find a working free proxy either ({proxy_status}); skipping Google Scholar.", file=sys.stderr)
-            return None
-        # Pass pg twice so *every* request goes through the proxy.
-        scholarly.use_proxy(pg, pg)
-        by_title, metrics = _fetch_author(scholarly)
-    except Exception as proxy_exc:  # noqa: BLE001 - proxy failure modes are varied and unpredictable
-        write_status("failed", f"direct fetch failed ({direct_reason}); proxy fetch also failed ({proxy_exc})")
-        print(f"Could not reach Google Scholar this run, direct or via proxy ({direct_reason}; {proxy_exc}).", file=sys.stderr)
-        return None
-
-    return by_title, metrics, "via free-proxy fallback"
 
 
 def main() -> int:
-    result = fetch_from_google_scholar()
-    if result is None:
-        print("Could not reach Google Scholar this run; keeping existing data.", file=sys.stderr)
-        return 0
-    by_title, metrics_totals, source = result
-
     if not PUB_PATH.exists():
         write_status("failed", "publications.json not found in this checkout")
         print("publications.json not found; nothing to update.", file=sys.stderr)
         return 0
 
+    items = fetch_crossref_works()
+    if items is None:
+        return 0
+
     publications = json.loads(PUB_PATH.read_text(encoding="utf-8"))
-    updated = 0
-    for pub in publications:
-        key = normalise(pub.get("title", ""))
-        if key in by_title:
-            pub["citations"] = by_title[key]
-            updated += 1
-        # else: not found in this run's source - leave its citation count
-        # as it was rather than guessing.
+    existing_dois = {normalise_doi(p["doi"]) for p in publications if p.get("doi")}
+    existing_titles = {normalise(p["title"]) for p in publications if p.get("title")}
+    existing_ids = {p["id"] for p in publications if p.get("id")}
 
-    PUB_PATH.write_text(format_publications(publications), encoding="utf-8")
+    new_entries: list[dict] = []
+    possible_updates: list[str] = []  # human-readable titles, for the status message
+    checked = 0
 
-    metrics = {**metrics_totals, "updated": datetime.date.today().isoformat()}
-    METRICS_PATH.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    for item in items:
+        doi = normalise_doi(item.get("DOI", ""))
+        title = ((item.get("title") or [""])[0] or "").strip()
+        if not doi or not title:
+            continue
 
-    write_status("ok", f"updated {updated}/{len(publications)} publications ({source})")
-    print(f"Updated citation counts for {updated}/{len(publications)} publications, from Google Scholar ({source}).")
+        classified = _classify(item, doi)
+        if classified is None:
+            continue
+        pub_type, venue = classified
+        checked += 1
+
+        if doi in existing_dois:
+            continue
+
+        title_key = normalise(title)
+        if title_key in existing_titles:
+            possible_updates.append(title)
+            continue
+
+        year = _extract_year(item) or datetime.date.today().year
+        authors = _format_authors(item.get("author", []))
+        first_family = (item.get("author", [{}])[0].get("family") or "pub") if item.get("author") else "pub"
+        entry_id = _make_id(first_family, year, venue, existing_ids)
+        existing_ids.add(entry_id)
+
+        new_entries.append({
+            "id": entry_id,
+            "title": title,
+            "authors": authors or ["Cenk Celik"],
+            "year": year,
+            "venue": venue,
+            "type": pub_type,
+            "doi": doi,
+            "url": f"https://doi.org/{doi}",
+            "pubmedUrl": None,
+            "preprintUrl": f"https://doi.org/{doi}" if pub_type == "preprint" else None,
+            "selected": False,
+        })
+        existing_dois.add(doi)
+        existing_titles.add(title_key)
+
+    if new_entries:
+        publications.extend(new_entries)
+        PUB_PATH.write_text(format_publications(publications), encoding="utf-8")
+
+    parts = [f"checked {checked} Crossref record{'s' if checked != 1 else ''} for ORCID {ORCID_ID}"]
+    parts.append(f"added {len(new_entries)} new" if new_entries else "nothing new to add")
+    if possible_updates:
+        joined = "; ".join(possible_updates[:5])
+        parts.append(f"{len(possible_updates)} possible existing-entry update{'s' if len(possible_updates) != 1 else ''} to check by hand: {joined}")
+    write_status("ok", "; ".join(parts))
+    print("; ".join(parts))
     return 0
 
 

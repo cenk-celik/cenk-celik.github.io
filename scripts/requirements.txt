@@ -1,11 +1,4 @@
-scholarly>=1.7.11
-# scholarly's proxy support needs httpx's SOCKS extra; without this,
-# `from scholarly import ProxyGenerator` raises ImportError at import time.
-socksio
-# No free-proxy package dependency here on purpose: fetch_publications.py
-# scrapes free-proxy-list.net itself (see _scrape_candidate_proxies()
-# there) rather than going through either scholarly's own
-# ProxyGenerator.FreeProxies() or the free-proxy package, both of which
-# hit real bugs/dead ends. That scraping uses `requests` and
-# `beautifulsoup4`, which are already hard dependencies of scholarly
-# itself, so nothing new is needed here for it.
+# fetch_publications.py is the only script here with an external
+# dependency - a plain HTTP GET to Crossref's REST API. fetch_repos.py
+# and fetch_bluesky.py use only Python's standard library (urllib).
+requests

@@ -1,6 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import publicationsData from '../content/publications/publications.json';
-import publicationMetrics from '../content/publications/metrics.json';
 import repoCache from '../content/repos/cache.json';
 import repoFeatured from '../content/repos/featured.json';
 import blueskyCache from '../content/bluesky/cache.json';
@@ -17,7 +16,6 @@ export type Publication = {
   url: string;
   pubmedUrl?: string | null;
   preprintUrl?: string | null;
-  citations?: number;
   selected: boolean;
 };
 
@@ -37,18 +35,11 @@ export async function getSortedTeaching(): Promise<CollectionEntry<'teaching'>[]
 }
 
 export function getPublications(): Publication[] {
-  return [...(publicationsData as Publication[])].sort((a, b) => {
-    if (b.year !== a.year) return b.year - a.year;
-    return (b.citations ?? 0) - (a.citations ?? 0);
-  });
+  return [...(publicationsData as Publication[])].sort((a, b) => b.year - a.year);
 }
 
 export function getFeaturedPublications(): Publication[] {
   return getPublications().filter((p) => p.selected);
-}
-
-export function getPublicationMetrics() {
-  return publicationMetrics as { citations: number; hIndex: number; i10Index: number; updated: string };
 }
 
 export type RepoEntry = {

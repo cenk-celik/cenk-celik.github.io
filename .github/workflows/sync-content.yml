@@ -7,12 +7,11 @@ name: Sync content
 # left as it was and the run still succeeds - the next scheduled run
 # tries again.
 #
-# Publications (Google Scholar) used to run here too, on a self-hosted
-# runner - reverted (see git history) once it became clear that meant
-# registering this public repo's own machine to accept remotely
-# triggered jobs, a real security trade-off that wasn't surfaced clearly
-# enough before recommending it. See the README's Automation section for
-# how publications are synced now instead.
+# Publications live in their own workflow, sync-publications.yml, on
+# their own weekly schedule from a different source (Crossref, not
+# Google Scholar) - see git history for two earlier, abandoned versions
+# of that story (a self-hosted runner, then a local scheduled script)
+# neither of which is how it works today.
 on:
   schedule:
     - cron: "0 6 * * *" # 06:00 UTC daily

@@ -1,6 +1,6 @@
 # cenk-celik.github.io
 
-Cenk Celik's academic website — built with [Astro](https://astro.build), deployed on GitHub Pages, kept up to date by a mix of GitHub Actions and a local scheduled script. This document is the full reference: architecture, why it's built this way, how to edit content day to day, and how the automation works.
+Cenk Celik's academic website — built with [Astro](https://astro.build), deployed on GitHub Pages, kept up to date by GitHub Actions. This document is the full reference: architecture, why it's built this way, how to edit content day to day, and how the automation works.
 
 ## Contents
 
@@ -26,15 +26,14 @@ GitHub Pages deployment is native: `astro build` outputs static HTML/CSS to `dis
 ```
 ├── .github/
 │   ├── workflows/
-│   │   ├── deploy.yml          # build + deploy to GitHub Pages, on every push to main
-│   │   └── sync-content.yml    # daily: refresh software stats and Bluesky feed
+│   │   ├── deploy.yml             # build + deploy to GitHub Pages, on every push to main
+│   │   ├── sync-content.yml       # daily: refresh software stats and Bluesky feed
+│   │   └── sync-publications.yml  # weekly: check Crossref for new publications
 │   └── dependabot.yml          # weekly dependency PRs (npm, pip, GitHub Actions)
-├── scripts/                    # Python automation, run locally, by sync-content.yml, or (publications) by launchd
+├── scripts/                    # Python automation, run locally or by the two sync- workflows above
 │   ├── fetch_publications.py
 │   ├── fetch_repos.py
-│   ├── fetch_bluesky.py
-│   ├── sync_publications_local.sh              # invoked by the .plist below - see Automation
-│   └── io.cenk-celik.sync-publications.plist    # launchd schedule for fetch_publications.py
+│   └── fetch_bluesky.py
 ├── public/                     # served as-is: cv.pdf, favicon, robots.txt, og-image.png
 ├── src/
 │   ├── content.config.ts       # schema for every Markdown collection below
@@ -43,7 +42,7 @@ GitHub Pages deployment is native: `astro build` outputs static HTML/CSS to `dis
 │   │   ├── research/           # one file per research theme
 │   │   ├── teaching/           # one file per course/workshop
 │   │   ├── news/               # one file per news item
-│   │   ├── publications/       # publications.json + metrics.json (machine-generated)
+│   │   ├── publications/       # publications.json (machine-updated list) + sync-status.json
 │   │   ├── repos/              # featured.json (curated) + cache.json (machine-generated)
 │   │   └── bluesky/            # cache.json (machine-generated)
 │   ├── data/site.ts            # name, email, address, social links, nav
@@ -85,7 +84,7 @@ To add a future course, copy a file, bump the year, set `status: upcoming`.
 One file per item in `src/content/news/`, named `YYYY-MM-DD-slug.md`. Front matter is just `date:`; the body is the one- or two-sentence announcement (Markdown links work as normal).
 
 ### Publications and the "selected" flag
-`src/content/publications/publications.json` is normally rewritten automatically (see [Automation](#automation)), but it's a plain JSON array and safe to hand-edit. **To feature a paper on the homepage, set its `"selected": true`.** The sync script always preserves this field, your own `doi`/`pubmedUrl`/`preprintUrl` corrections, and `type`/`venueAbbr` once you've set them — it only fills in fields it finds empty and refreshes citation counts.
+`src/content/publications/publications.json` is a plain JSON array, safe to hand-edit, and normally only appended to automatically (see [Automation](#automation)) — new entries get added; nothing existing is ever rewritten by the sync. **To feature a paper on the homepage, set its `"selected": true`** (auto-added entries always start `false`; featuring one is always a deliberate, hand-made choice). Citation counts and h-index are not tracked on this site at all any more — see [Known limitations](#known-limitations) for why, and the Google Scholar link on the publications page for anyone who wants those numbers.
 
 ```json
 {
@@ -115,32 +114,13 @@ The CV is just the PDF at `public/cv.pdf`, linked from the hero button and the n
 ## Automation
 
 ### Publications (`scripts/fetch_publications.py`)
-Citation counts come from Google Scholar only, via the `scholarly` library — no account, no API key, no registration anywhere.
+Keeps the *list* of publications current - checks weekly, adds genuinely new ones automatically. Citation counts, h-index and i10-index are not tracked anywhere on this site; that was tried first (Google Scholar, several different ways - see below) and never worked reliably enough in production to keep, so it was dropped rather than kept half-working.
 
-Google Scholar has no official API, and blocks or CAPTCHAs almost every automated request from a recognisable cloud/datacenter IP — which is exactly what a GitHub-hosted runner is. That ruled out both scraping it directly from `ubuntu-latest` (blocked essentially every run) and routing through free rotating proxies from the same runner (0 of 160 candidates tried, across two separate real runs, ever got past even a basic liveness check — see the script's own module docstring for the full evidence trail, including two real bugs found and fixed along the way in `scholarly` itself). Paid or registered proxy/scraping-API services (ScraperAPI, Webshare, SerpApi) were considered and ruled out by request: no signup anywhere, free tier or not.
+Source: [Crossref](https://www.crossref.org)'s REST API, filtered to Cenk's ORCID iD (`0000-0001-8301-0172`) - no account, no API key, no registration anywhere. Every DOI-registered work (journal articles, preprints, book chapters and more) lists its authors' ORCID iDs where known, and Crossref lets you query by one directly. Unlike Google Scholar, this is a plain, documented, intentionally machine-friendly public API - nothing to work around, which is why this runs on an ordinary GitHub-hosted runner rather than needing any special infrastructure.
 
-What that leaves is a machine you control, on an ordinary residential connection that doesn't carry the cloud-IP signal Google Scholar and free proxies both reject. The script itself is already written for this: it asks Google Scholar directly first, and only falls back to a scraped free proxy if that fails. Each run costs about two requests total: the citation count for every paper is read straight off the author's own profile page (one request), rather than by opening each publication's own page as earlier versions of this script did — the `scholarly` maintainers note that per-publication scraping specifically is what free proxies essentially never get past. When Google Scholar still can't be reached, direct or via the fallback, the script leaves the existing data untouched rather than falling back to another source, so every citation count on the site always traces back to Google Scholar.
+Matching against what's already in `publications.json` is DOI-first, since every hand-curated entry already has one. A DOI already listed means nothing to do. A brand new DOI whose title doesn't match anything already listed is a genuinely new publication and gets added automatically, with best-effort fields (title, authors, year, venue, a type guessed from Crossref's own metadata) - always with `"selected": false`, since featuring a paper on the homepage stays a deliberate choice. A new DOI whose *title* matches something already listed - typically a preprint that's since been formally published under a new DOI - is deliberately **not** auto-added as what would look like a duplicate entry; it's named instead in `sync-status.json` for a quick manual look, usually just updating the existing entry's own `doi`/`url` by hand. Crossref also indexes things that aren't publications in the sense this site means (eLife's public peer reviews and author responses, protocols.io lab protocols under the same record type as a genuine preprint); the script filters those out - see its own module docstring for the specifics, including the real examples on this ORCID iD's own record that shaped the filtering.
 
-**Runs from your own Mac, on a schedule, without going through GitHub Actions at all.** A GitHub Actions self-hosted runner was tried first and reverted: it would have given this a residential IP too, but only by registering your Mac to accept jobs dispatched by this (public) repository's own Actions system — a real trade-off, and not one that was surfaced clearly enough before it was first suggested. `scripts/sync_publications_local.sh`, scheduled by a `launchd` LaunchAgent (`scripts/io.cenk-celik.sync-publications.plist`), avoids that entirely: nothing here is triggered remotely, it's a fixed script that runs on a timer you control, the same trust model as anything else already running on your machine. See [Local scheduling setup](#local-scheduling-setup) below.
-
-Each entry in `publications.json` is matched by normalised title, and only its `citations` field is updated — title, authors, venue, type, DOI, links and `selected` stay exactly as hand-curated. New publications are **not** auto-added (Google Scholar occasionally splits one real paper into two records - e.g. a preprint indexed separately from its published version - which makes auto-adding risky), so add new entries by hand; the next sync then keeps their citation count current. The script is still **keep-last-good**: if Google Scholar can't be reached this run, it logs a warning and exits without touching the data files.
-
-### Local scheduling setup
-One-time and manual, and only needed for publications — `fetch_repos.py` and `fetch_bluesky.py` stay on GitHub Actions and need nothing extra.
-
-1. Both files already live in `scripts/`: `sync_publications_local.sh` (does the actual work: pulls, runs `fetch_publications.py`, commits and pushes if anything changed) and `io.cenk-celik.sync-publications.plist` (tells `launchd` when to run it). The `.plist` already points at this repo's real path and is executable; there's nothing to fill in.
-2. Install it by copying the plist into `~/Library/LaunchAgents/` and loading it:
-   ```bash
-   cp scripts/io.cenk-celik.sync-publications.plist ~/Library/LaunchAgents/
-   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.cenk-celik.sync-publications.plist
-   ```
-   (On older macOS versions without `bootstrap`, use `launchctl load ~/Library/LaunchAgents/io.cenk-celik.sync-publications.plist` instead.)
-3. It's scheduled for 06:00 **local** time by default — unlike the old GitHub Actions cron this is no longer tied to UTC. To change it, edit the `Hour`/`Minute` values in the copy under `~/Library/LaunchAgents/` (not just the one in `scripts/`, which `launchd` never reads directly), then re-run the `bootstrap`/`load` command above.
-4. To test without waiting for the schedule: `launchctl kickstart gui/$(id -u)/io.cenk-celik.sync-publications`, then check `~/Library/Logs/cenk-celik-sync-publications.log` for what happened.
-5. Your Mac needs to be **on, awake and connected to the internet at the scheduled time** for it to fire — `launchd` runs it as soon as possible after that if the Mac was asleep, rather than skipping the day, but a Mac that's fully shut down or logged out (not just asleep) at the scheduled time will miss that day's run entirely with nothing queued to catch up.
-6. To stop it: `launchctl bootout gui/$(id -u)/io.cenk-celik.sync-publications` (or `launchctl unload ...` on older macOS), then optionally delete the file from `~/Library/LaunchAgents/`.
-
-Because this never registers with GitHub Actions in any form, none of the self-hosted-runner security trade-off applies: there's no remote dispatch surface at all, just a local schedule running a script that already lives in this repo.
+None of this is claimed to be perfect - "review" vs plain "journal", the exact author list on a twenty-author paper, a hand-written `venueAbbr` - all of that stays a judgement call, same as it's always been for hand-added entries. An auto-added entry is a first draft, not a final one; touching it up afterwards is normal. The script is still **keep-last-good**: if Crossref can't be reached this run, it logs a warning and exits without touching `publications.json`.
 
 ### Software stats (`scripts/fetch_repos.py`)
 Plain GitHub REST API calls (unauthenticated is enough for a handful of public repos; in Actions, the built-in `GITHUB_TOKEN` is used automatically to raise the rate limit). Same keep-last-good behaviour per repository.
@@ -149,12 +129,12 @@ Plain GitHub REST API calls (unauthenticated is enough for a handful of public r
 Bluesky's public AT Protocol AppView endpoint (`public.api.bsky.app`) needs no login or token for a public profile. The script snapshots the latest posts into `src/content/bluesky/cache.json`, which the homepage reads at build time — so the homepage never makes a live network call itself (faster, and immune to Bluesky being briefly down). Reposts are shown with a small "reposted from" label rather than filtered out, since original posts are infrequent enough that filtering them out could leave the section thin.
 
 ### Schedule
-Two independent schedules, each committing only the files it touched:
+Two GitHub Actions workflows, on two different cadences, each committing only the files it touched:
 
-- `.github/workflows/sync-content.yml` runs `fetch_repos.py` and `fetch_bluesky.py` once daily on a GitHub-hosted runner. Can also be run on demand from the Actions tab (`workflow_dispatch`).
-- `scripts/sync_publications_local.sh` runs `fetch_publications.py` once daily via a `launchd` LaunchAgent on your own Mac — see [Local scheduling setup](#local-scheduling-setup) above.
+- `.github/workflows/sync-content.yml` runs `fetch_repos.py` and `fetch_bluesky.py` once **daily**.
+- `.github/workflows/sync-publications.yml` runs `fetch_publications.py` once **weekly** (Mondays) - a new publication is a rare enough event that checking daily would just be noise.
 
-Either one landing a commit on `main` triggers `deploy.yml`, so the live site picks up new papers, updated stars or fresh posts with no manual step regardless of which schedule produced the change.
+Both can also be run on demand from the Actions tab (`workflow_dispatch`). Either one landing a commit on `main` triggers `deploy.yml`, so the live site picks up new papers, updated stars or fresh posts with no manual step regardless of which schedule produced the change.
 
 ### Dependencies
 `.github/dependabot.yml` opens grouped weekly PRs for npm, pip (`/scripts`) and the GitHub Actions themselves, with minor/patch bumps grouped into one PR to keep review low-effort; major bumps still arrive individually since they're the ones worth actually reading.
@@ -181,10 +161,12 @@ python scripts/fetch_bluesky.py
 
 Everything builds and deploys from GitHub Actions — there are a few manual, one-time settings to flip after the first push, because none of them can be set from a file. First: in the repository, go to **Settings → Pages → Build and deployment → Source**, and choose **GitHub Actions** (rather than "Deploy from a branch"). After that, every push to `main` runs `deploy.yml` automatically.
 
-One more one-time setting, needed for `sync-content.yml` to be able to commit its own updates: **Settings → Actions → General → Workflow permissions**, set to **Read and write permissions**.
+One more one-time setting, needed for `sync-content.yml` and `sync-publications.yml` to be able to commit their own updates: **Settings → Actions → General → Workflow permissions**, set to **Read and write permissions**.
 
 No custom domain is configured — the site serves from `cenk-celik.github.io` as before. Adding one later is just a `CNAME` file plus a DNS record; ask if you want that set up.
 
 ## Known limitations
 
-- **Google Scholar sync depends on your own Mac staying on and awake at the scheduled time**, not GitHub's infrastructure. It needs to run from a residential IP (see Publications above), which ruled out GitHub-hosted runners; a GitHub Actions self-hosted runner would also have worked, but only by registering your Mac to accept jobs dispatched by this repository's own (public) Actions system — a real trade-off, so this uses a plain local `launchd` schedule instead, which never touches GitHub Actions at all. The cost of that choice: if your Mac is asleep at the scheduled time, `launchd` runs it as soon as possible afterwards; if it's fully shut down or logged out, that day's run is simply missed, with nothing to catch up later the way a queued GitHub Actions job would. Citation counts are otherwise **keep-last-good**: any day Google Scholar can't be reached, direct or via the free-proxy fallback, counts are simply left as they were rather than sourced elsewhere, so every number on the site always traces back to Google Scholar.
+- **No citation counts, h-index or i10-index anywhere on this site.** Tracking those automatically was tried at length (Google Scholar, via several different approaches - direct scraping, a free rotating proxy, a self-hosted GitHub Actions runner, a local scheduled script) and none of it worked reliably enough in real, ongoing use to keep. The publications page links out to Google Scholar directly for anyone who wants those numbers.
+- **New publications are only ever *added*, never edited or removed automatically.** `fetch_publications.py` will not fix a typo, update a venue name, or notice a paper was retracted - all of that stays a hand edit, same as it's always been. It also can't perfectly tell a genuinely new publication from an existing one under a new DOI (typically a preprint that's since been formally published) - see [Automation](#automation) for exactly how that's handled (flagged in `sync-status.json`, not guessed at silently).
+- **Conference abstracts and anything else without its own DOI stay hand-added.** Crossref has nothing to check for these, so `type: "abstract"` entries (and anything else with `doi: null`) need adding and updating by hand as before.
