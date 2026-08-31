@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-25T00:00:00+00:00",
-  "outcome": "pending",
-  "message": "not run yet under the new Crossref-based approach - this file is stale from the abandoned Google Scholar era; the next run of sync-publications.yml (or a manual run) will overwrite it for real"
+  "timestamp": "2026-08-31T11:56:03+00:00",
+  "outcome": "failed",
+  "message": "could not fetch from Crossref: 400 Client Error: Bad Request for url: https://api.crossref.org/works?filter=orcid:0000-0001-8301-0172&rows=100&select=DOI,title,author,published,published-print,published-online,issued,created,container-title,institution,type,subtype"
 }
