@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-31T11:56:03+00:00",
+  "timestamp": "2026-09-07T10:49:32+00:00",
   "outcome": "failed",
   "message": "could not fetch from Crossref: 400 Client Error: Bad Request for url: https://api.crossref.org/works?filter=orcid:0000-0001-8301-0172&rows=100&select=DOI,title,author,published,published-print,published-online,issued,created,container-title,institution,type,subtype"
 }
