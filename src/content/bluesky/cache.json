@@ -1,6 +1,29 @@
 {
-  "fetchedAt": "2026-10-21T10:44:43.458648Z",
+  "fetchedAt": "2026-10-22T10:46:03.610450Z",
   "posts": [
+    {
+      "uri": "at://did:plc:px2ss7dpayguim3t5hgmhccb/app.bsky.feed.post/3myezkj7afc2c",
+      "url": "https://bsky.app/profile/breastcancernow.bsky.social/post/3myezkj7afc2c",
+      "text": "We're funding 2 new research projects using AI to predict breast cancer coming back. \n\nFind out more about our new researchers 👇\nbreastcancernow.org/about-us/res...",
+      "createdAt": "2026-10-21T11:16:29.425Z",
+      "likeCount": 6,
+      "repostCount": 3,
+      "images": [
+        {
+          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:px2ss7dpayguim3t5hgmhccb/bafkreihuzxjwcxjlmxikprptiucdv4fgikjlbogn4x2avwenamjok35wqu",
+          "alt": "Funding boost to unlock AI's potential. We're funding 2 new research projects using AI to predict breast cancer coming back."
+        },
+        {
+          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:px2ss7dpayguim3t5hgmhccb/bafkreifvrsfsis2mv4xx4eulhzihdylnygobfnvqvgpbb5bfl35qv3dohi",
+          "alt": "Using AI to understand why some ER-positive breast cancers return. Professor Maria Secrier and her team, from University College London, are studying how ER-positive breast cancer cells enter, stay in, and exist in a sleep-like state. And what causes them to become active again.They've developed advanced AI models that can learn the patterns and \"rules that cells follow\". The team is also studying how the surroundings can help or hinder these inactive breast cancer cells. Using this information, they want to identify when cancer cells are likely to \"wake up\"."
+        },
+        {
+          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:px2ss7dpayguim3t5hgmhccb/bafkreiagi3sfoup4xfdeofzh6viceawikludufbdjwtwpvp5i36loj6ctq",
+          "alt": "Using AI to Uncover the Causes of Late Recurrence in ER-Positive Breast Cancer. Dr. Maggie Cheang and her team at the Institute of Cancer Research (ICR) are analysing tumour samples collected at several key stages: before treatment, during treatment, and again at recurrence. Using advanced imaging, they're all studying these tumours in detail. To make sense of this complex data, the team with use AI to look for patterns that reveal the earliest signs that a cancer is likely to return."
+        }
+      ],
+      "repostOf": "Cenk Celik"
+    },
     {
       "uri": "at://did:plc:tezsl6gexbdjcwznslm3snhi/app.bsky.feed.post/3mvnemnuj7c2u",
       "url": "https://bsky.app/profile/ucllifesciences.bsky.social/post/3mvnemnuj7c2u",
@@ -21,21 +44,6 @@
       "images": [
         {
           "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:26cnc5l42jvqualc2vjlhml2/bafkreicmkxv2scu3uvy7msqfo7v74c4rgs5ejckyhtan26xtudk5n72opu",
-          "alt": ""
-        }
-      ],
-      "repostOf": "Cenk Celik"
-    },
-    {
-      "uri": "at://did:plc:26cnc5l42jvqualc2vjlhml2/app.bsky.feed.post/3msxzafhhlh2l",
-      "url": "https://bsky.app/profile/jem.org/post/3msxzafhhlh2l",
-      "text": "Evans et al. @barrallab.bsky.social identify CD1d as a key regulator of myeloid cell diversity in #BreastCancer. CD1d targeting reshapes tumor immune infiltrates, suppresses tumor growth, & enhances #immunotherapy efficacy, suggesting an actionable pathway for treatment. rupress.org/jem/article/...",
-      "createdAt": "2026-08-13T16:00:15.008Z",
-      "likeCount": 4,
-      "repostCount": 3,
-      "images": [
-        {
-          "url": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:26cnc5l42jvqualc2vjlhml2/bafkreihloxrjxev57t5uunjt3ptgizeqwyxgzvzqydsnrxjtvr4osdsxky",
           "alt": ""
         }
       ],
