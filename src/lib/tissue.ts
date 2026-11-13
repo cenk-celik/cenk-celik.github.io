@@ -46,7 +46,7 @@ function vnoise(x: number, y: number) {
 }
 function stateField(x: number, y: number, t: number) {
   const f = vnoise(x * 0.006 + 10 + t * 0.014, y * 0.006 + 10 - t * 0.011) * 0.7 + vnoise(x * 0.02, y * 0.02) * 0.3;
-  return Math.min(0.999, Math.max(0, (f - 0.2) * 2.2));
+  return Math.min(0.999, Math.max(0, (f - 0.3) * 2.4));
 }
 const stateAt = (x: number, y: number, t: number) => Math.floor(stateField(x, y, t) * NSTATES);
 
@@ -61,7 +61,7 @@ const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] 
 
 function readPalette() {
   const cs = getComputedStyle(document.documentElement);
-  const fallback: RGB[] = [[78, 112, 140], [112, 150, 122], [226, 176, 90], [217, 120, 92]];
+  const fallback: RGB[] = [[147, 122, 178], [165, 205, 122], [186, 103, 138], [143, 186, 205]];
   return {
     states: fallback.map((f, i) => parseColour(cs.getPropertyValue(`--state-${i + 1}`), f)),
     text: cs.getPropertyValue('--color-text').trim() || '#ece7e2',

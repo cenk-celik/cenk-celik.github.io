@@ -69,11 +69,11 @@
   --color-accent-text: #1a1310;
   --color-tag-bg: #201b17;
   --color-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-  /* Generic tumour cell states (hero + page banners). Categorical, unordered. */
-  --state-1: #4e708c;
-  --state-2: #70967a;
-  --state-3: #e2b05a;
-  --state-4: #d9785c;
+  /* Generic tumour cell states (hero + page banners). Categorical, unordered; purple / green / pink / sky blue, taken from the supplied palettes and checked to stay distinguishable under deuteranopia, protanopia and tritanopia. */
+  --state-1: #937ab2;
+  --state-2: #a5cd7a;
+  --state-3: #ba678a;
+  --state-4: #8fbacd;
   color-scheme: dark;
 }
 
@@ -92,10 +92,10 @@
   --color-accent-text: #fff9f6;
   --color-tag-bg: #f3ece4;
   --color-shadow: 0 8px 30px rgba(30, 20, 10, 0.08);
-  --state-1: #60849e;
-  --state-2: #709676;
-  --state-3: #d6a852;
-  --state-4: #b35c3c;
+  --state-1: #69468e;
+  --state-2: #647e4f;
+  --state-3: #ba678a;
+  --state-4: #8fbacd;
   color-scheme: light;
 }
 
