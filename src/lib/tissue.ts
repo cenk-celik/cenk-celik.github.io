@@ -48,7 +48,16 @@ function stateField(x: number, y: number, t: number) {
   const f = vnoise(x * 0.006 + 10 + t * 0.014, y * 0.006 + 10 - t * 0.011) * 0.7 + vnoise(x * 0.02, y * 0.02) * 0.3;
   return Math.min(0.999, Math.max(0, (f - 0.3) * 2.4));
 }
-const stateAt = (x: number, y: number, t: number) => Math.floor(stateField(x, y, t) * NSTATES);
+// Thresholds on the state field, tuned so the tissue is mostly purple (~43%),
+// then cyan (~31%), red (~16%) and least yellow (~10%). Field order is
+// yellow < red < purple < cyan, so neighbouring territories follow that gradient.
+const STATE_THRESHOLDS = [0.005, 0.25, 0.72];
+const stateAt = (x: number, y: number, t: number) => {
+  const f = stateField(x, y, t);
+  let st = 0;
+  while (st < STATE_THRESHOLDS.length && f >= STATE_THRESHOLDS[st]) st++;
+  return st;
+};
 
 // ---- colour -------------------------------------------------------------
 function parseColour(v: string, fallback: RGB): RGB {
@@ -61,7 +70,7 @@ const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] 
 
 function readPalette() {
   const cs = getComputedStyle(document.documentElement);
-  const fallback: RGB[] = [[147, 122, 178], [165, 205, 122], [186, 103, 138], [143, 186, 205]];
+  const fallback: RGB[] = [[223, 191, 84], [216, 83, 100], [105, 77, 151], [119, 189, 219]];
   return {
     states: fallback.map((f, i) => parseColour(cs.getPropertyValue(`--state-${i + 1}`), f)),
     text: cs.getPropertyValue('--color-text').trim() || '#ece7e2',
@@ -109,8 +118,10 @@ export function mountTissue(canvas: HTMLCanvasElement, mode: TissueMode = 'hero'
       outline = (a) => R * (0.86 + 0.28 * vnoise(Math.cos(a) * 1.3 + 5, Math.sin(a) * 1.3 + 5));
       inside = (x, y) => Math.hypot(x - cx, y - cy) < outline(Math.atan2(y - cy, x - cx)) * 1.05;
       alphaAt = (x, y) => {
+        // soft edge: fully opaque inside, easing to nothing towards the rim
         const rim = Math.hypot(x - cx, y - cy) / outline(Math.atan2(y - cy, x - cx));
-        return Math.min(1, Math.max(0, (1.12 - rim) * 5));
+        const t = Math.min(1, Math.max(0, (1.0 - rim) / 0.5));
+        return t * t * (3 - 2 * t);
       };
       const target = narrow ? 520 : 1100;
       cellSize = Math.sqrt((Math.PI * R * R) / target);
@@ -120,9 +131,13 @@ export function mountTissue(canvas: HTMLCanvasElement, mode: TissueMode = 'hero'
       cx = W / 2; cy = H / 2; R = Math.max(W, H);
       outline = () => R;
       inside = (x, y) => x > -20 && x < W + 20 && y > -20 && y < H + 20;
-      alphaAt = (x) => {
-        const f = Math.min(1, Math.max(0, (x / W - (narrow ? 0.05 : 0.38)) * (narrow ? 1.6 : 2.0)));
-        return f * f * (3 - 2 * f) * 0.9;
+      const sstep = (v: number) => { const t = Math.min(1, Math.max(0, v)); return t * t * (3 - 2 * t); };
+      alphaAt = (x, y) => {
+        // fade in from the left, and melt into the page at the top, bottom and right edges
+        const fx = sstep((x / W - (narrow ? 0.05 : 0.38)) * (narrow ? 1.6 : 2.0));
+        const fy = sstep(Math.min(y, H - y) / (H * 0.35));
+        const fr = sstep((W - x) / (W * 0.1));
+        return fx * fy * fr;
       };
       cellSize = narrow ? 20 : 24;
       region = [-20, -20, W + 20, H + 20];
@@ -215,15 +230,6 @@ export function mountTissue(canvas: HTMLCanvasElement, mode: TissueMode = 'hero'
 
     g.save();
     g.lineJoin = 'round';
-    if (mode === 'hero') {          // clip hull cells to the tissue outline
-      g.beginPath();
-      for (let a = 0; a <= 6.2832; a += 0.05) {
-        const r = outline(a) * 1.02;
-        const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-        a ? g.lineTo(x, y) : g.moveTo(x, y);
-      }
-      g.closePath(); g.clip();
-    }
     for (let i = 0; i < cells.length; i++) {
       const p = cells[i];
       const poly = vor.cellPolygon(i);
