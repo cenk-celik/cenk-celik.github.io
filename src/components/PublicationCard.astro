@@ -34,28 +34,28 @@ const typeLabel: Record<Publication['type'], string> = {
     <p class="pub-venue">
       <span class="tag">{typeLabel[pub.type]}</span>
       <span class="venue-name">{pub.venue}</span>
+      {
+        !compact && pub.doi && (
+          <a class="pub-link" href={pub.url} target="_blank" rel="noopener noreferrer">
+            DOI ↗
+          </a>
+        )
+      }
+      {
+        !compact && pub.pubmedUrl && (
+          <a class="pub-link" href={pub.pubmedUrl} target="_blank" rel="noopener noreferrer">
+            PubMed ↗
+          </a>
+        )
+      }
+      {
+        !compact && pub.preprintUrl && (
+          <a class="pub-link" href={pub.preprintUrl} target="_blank" rel="noopener noreferrer">
+            Preprint ↗
+          </a>
+        )
+      }
     </p>
-    {
-      !compact && (
-        <div class="pub-links">
-          {pub.doi && (
-            <a class="pub-link" href={pub.url} target="_blank" rel="noopener noreferrer">
-              DOI ↗
-            </a>
-          )}
-          {pub.pubmedUrl && (
-            <a class="pub-link" href={pub.pubmedUrl} target="_blank" rel="noopener noreferrer">
-              PubMed ↗
-            </a>
-          )}
-          {pub.preprintUrl && (
-            <a class="pub-link" href={pub.preprintUrl} target="_blank" rel="noopener noreferrer">
-              Preprint ↗
-            </a>
-          )}
-        </div>
-      )
-    }
   </div>
 </article>
 
@@ -124,14 +124,8 @@ const typeLabel: Record<Publication['type'], string> = {
     font-style: italic;
   }
 
-  .pub-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-    margin-top: var(--space-3);
-  }
-
   .pub-link {
+    margin-left: var(--space-2);
     font-family: var(--font-sans);
     font-size: var(--step--1);
     font-weight: 600;

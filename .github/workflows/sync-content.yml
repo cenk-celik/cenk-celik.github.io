@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: "sync-content"
@@ -48,6 +49,8 @@ jobs:
         run: python scripts/fetch_bluesky.py
 
       - name: Commit changes if any
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -57,4 +60,7 @@ jobs:
           else
             git commit -m "chore: sync software stats and Bluesky feed"
             git push
+            # Pushes made with the built-in token never trigger other workflows,
+            # so deploy explicitly or the live site would stay stale.
+            gh workflow run deploy.yml
           fi

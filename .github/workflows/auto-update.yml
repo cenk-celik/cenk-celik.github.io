@@ -1,0 +1,53 @@
+name: Auto-update dependencies
+
+# Replaces Dependabot: no pull requests, no manual steps. Once a month this
+# updates npm packages within the version ranges in package.json (minor and
+# patch only - major upgrades never happen automatically), builds the site,
+# and only if the build succeeds commits the lockfile and triggers a deploy.
+# If anything fails, nothing is committed and the live site is untouched.
+on:
+  schedule:
+    - cron: "0 5 15 * *" # 05:00 UTC on the 15th of every month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: "auto-update"
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Update packages within current ranges
+        run: npm update
+
+      - name: Build (gate - fails the run, and commits nothing, if the site breaks)
+        run: npm run build
+
+      - name: Commit, push and deploy if anything changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "chore: update dependencies"
+            git push
+            gh workflow run deploy.yml
+          fi
