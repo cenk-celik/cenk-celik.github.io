@@ -35,11 +35,6 @@ export const site = {
       icon: 'scholar',
     },
     {
-      label: 'LinkedIn',
-      href: 'https://www.linkedin.com/in/cenk-celik',
-      icon: 'linkedin',
-    },
-    {
       label: 'Bluesky',
       href: 'https://bsky.app/profile/cenkcelik.bsky.social',
       icon: 'bluesky',

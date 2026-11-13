@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SectionHeading from '../../components/SectionHeading.astro';
+import PageBanner from '../../components/PageBanner.astro';
 import NewsItem from '../../components/NewsItem.astro';
 import { getSortedNews } from '../../lib/content';
 import { render } from 'astro:content';
@@ -9,9 +9,9 @@ const news = await getSortedNews();
 ---
 
 <BaseLayout title="News" description="Updates on publications, preprints and collaborations.">
+  <PageBanner title="News" />
   <section>
     <div class="container">
-      <SectionHeading title="News" />
       <div class="news-list">
         {
           news.map(async (item) => {

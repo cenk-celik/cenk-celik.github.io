@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SectionHeading from '../../components/SectionHeading.astro';
+import PageBanner from '../../components/PageBanner.astro';
 import TeachingCard from '../../components/TeachingCard.astro';
 import { getSortedTeaching } from '../../lib/content';
 import { render } from 'astro:content';
@@ -9,12 +9,10 @@ const teaching = await getSortedTeaching();
 ---
 
 <BaseLayout title="Teaching" description="Courses and workshops on single-cell and spatial data analysis.">
+  <PageBanner title="Teaching & workshops"
+        description="Hands-on courses in computational biology, taught mainly through Bilimler Köyü (Village of Sciences), a volunteer initiative bringing STEMM training to young people from underrepresented regions of Turkey." />
   <section>
     <div class="container">
-      <SectionHeading
-        title="Teaching & workshops"
-        description="Hands-on courses in computational biology, taught mainly through Bilimler Köyü (Village of Sciences), a volunteer initiative bringing STEMM training to young people from underrepresented regions of Turkey."
-      />
       <div class="teaching-list">
         {
           teaching.map(async (course) => {

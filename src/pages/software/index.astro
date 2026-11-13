@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SectionHeading from '../../components/SectionHeading.astro';
+import PageBanner from '../../components/PageBanner.astro';
 import RepoCard from '../../components/RepoCard.astro';
 import { getRepos } from '../../lib/content';
 import { site } from '../../data/site';
@@ -9,12 +9,10 @@ const repos = getRepos();
 ---
 
 <BaseLayout title="Software" description="Research software for spatial and single-cell transcriptomics analysis.">
+  <PageBanner title="Software"
+        description="Open-source tools that come out of the research programme. Stats are pulled automatically from GitHub, so this list only needs a repository name added to update." />
   <section>
     <div class="container">
-      <SectionHeading
-        title="Software"
-        description="Open-source tools that come out of the research programme. Stats are pulled automatically from GitHub, so this list only needs a repository name added to update."
-      />
       <div class="repo-grid card-grid">
         {repos.map((repo) => (
           <div class="card">

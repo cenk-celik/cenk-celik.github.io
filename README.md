@@ -101,7 +101,7 @@ One file per item in `src/content/news/`, named `YYYY-MM-DD-slug.md`. Front matt
 The CV is just the PDF at `public/cv.pdf`, linked from the hero button and the nav bar — replace that file when your CV changes, nothing else needs to change. (`/cv` redirects to it, in case anything links there directly.)
 
 ### Contact details and social links
-`src/data/site.ts` — one object with your email, address, ORCID, and the social icon list (Google Scholar, Bluesky, LinkedIn, X, ORCID). This is the only "code-like" file in the list, but it's a flat object, not logic.
+`src/data/site.ts` — one object with your email, address, ORCID, and the social icon list (Google Scholar, Bluesky, X, ORCID). This is the only "code-like" file in the list, but it's a flat object, not logic.
 
 ## Design system
 

@@ -1,0 +1,28 @@
+---
+// Decorative animated tissue. The parent element must be position: relative;
+// the canvas fills it. See src/lib/tissue.ts.
+interface Props {
+  mode?: 'hero' | 'banner';
+}
+const { mode = 'hero' } = Astro.props;
+---
+
+<canvas class="tissue-canvas" data-tissue={mode} aria-hidden="true"></canvas>
+
+<style>
+  .tissue-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>
+
+<script>
+  import { mountTissue, type TissueMode } from '../lib/tissue';
+
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-tissue]').forEach((canvas) => {
+    mountTissue(canvas, canvas.dataset.tissue as TissueMode);
+  });
+</script>

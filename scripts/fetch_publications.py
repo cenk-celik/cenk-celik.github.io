@@ -85,7 +85,7 @@ import sys
 from pathlib import Path
 
 ORCID_ID = "0000-0001-8301-0172"
-CROSSREF_URL = f"https://api.crossref.org/works?filter=orcid:{ORCID_ID}&rows=100&select=DOI,title,author,published,published-print,published-online,issued,created,container-title,institution,type,subtype"
+CROSSREF_URL = f"https://api.crossref.org/works?filter=orcid:{ORCID_ID}&rows=100"
 # A descriptive User-Agent with a contact address, per Crossref's own
 # etiquette (the "polite pool") - not required, but it's free reliability
 # and costs one line. See https://api.crossref.org (their own docs page).
@@ -330,7 +330,8 @@ def main() -> int:
 
     for item in items:
         doi = normalise_doi(item.get("DOI", ""))
-        title = ((item.get("title") or [""])[0] or "").strip()
+        # Crossref titles can carry JATS markup (<i>...</i>) and stray newlines
+        title = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", (item.get("title") or [""])[0] or "")).strip()
         if not doi or not title:
             continue
 

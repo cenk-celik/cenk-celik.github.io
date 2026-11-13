@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-09T14:28:26+00:00",
-  "outcome": "failed",
-  "message": "could not fetch from Crossref: 400 Client Error: Bad Request for url: https://api.crossref.org/works?filter=orcid:0000-0001-8301-0172&rows=100&select=DOI,title,author,published,published-print,published-online,issued,created,container-title,institution,type,subtype"
+  "timestamp": "2026-11-13T17:02:25+00:00",
+  "outcome": "ok",
+  "message": "checked 19 Crossref records for ORCID 0000-0001-8301-0172; added 3 new; 6 possible existing-entry updates to check by hand: Decoding the complexity of delayed wound healing following Enterococcus faecalis infection; Decoding the complexity of delayed wound healing following Enterococcus faecalis infection; Cell isolation from dorsal mouse skin for single-cell RNA-seq v1; Decoding the complexity of delayed wound healing following Enterococcus faecalis infection; Genetic regulation of injury induced heterotopic ossification in adult zebrafish"
 }

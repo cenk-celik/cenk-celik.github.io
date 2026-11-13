@@ -1,10 +1,10 @@
 ---
-import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import PublicationCard from '../components/PublicationCard.astro';
 import BlueskyPost from '../components/BlueskyPost.astro';
 import SocialIcons from '../components/SocialIcons.astro';
+import TissueCanvas from '../components/TissueCanvas.astro';
 import { getCollection, render } from 'astro:content';
 import {
   getSortedResearch,
@@ -12,7 +12,6 @@ import {
   getBlueskyPosts,
 } from '../lib/content';
 import { site } from '../data/site';
-import profileImage from '../assets/profile.png';
 
 const [bioEntry] = await getCollection('bio');
 const { Content: BioContent } = await render(bioEntry);
@@ -24,22 +23,31 @@ const bluesky = getBlueskyPosts(3);
 
 <BaseLayout title={site.name}>
   <section class="hero">
+    <TissueCanvas mode="hero" />
+    <div class="hero-veil"></div>
     <div class="container hero-inner">
-      <Image src={profileImage} alt={site.name} width={176} height={176} class="hero-photo" />
       <div class="hero-text">
+        <p class="eyebrow hero-eyebrow">Tumour cell states · plasticity · single-cell · spatial</p>
         <h1>{site.name}</h1>
         <p class="hero-role">{site.role} at {site.institution}</p>
         <p class="hero-standfirst">
-          I study why cancer cells stop dividing, how they stay dormant, and what tips them back
-          towards growth — work that matters because that switch underlies treatment resistance
-          and relapse in solid tumours.
+          I study how tumour cells move between states, and what shapes that plasticity within the
+          tissue around them.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href={`mailto:${site.email}`}>Get in touch</a>
+          <a class="btn btn-primary" href="/research">Explore the research</a>
+          <a class="btn" href={`mailto:${site.email}`}>Get in touch</a>
           <a class="btn" href={site.cvPdf} download>Download CV ↓</a>
         </div>
         <SocialIcons class="hero-socials" />
       </div>
+    </div>
+    <div class="hero-legend" aria-hidden="true">
+      <span>Move your cursor over the tissue to perturb cell states</span>
+      <span class="legend-key">
+        <i style="background: var(--state-1)"></i><i style="background: var(--state-2)"></i><i style="background: var(--state-3)"></i><i style="background: var(--state-4)"></i>
+        Cell states
+      </span>
     </div>
   </section>
 
@@ -105,20 +113,44 @@ const bluesky = getBlueskyPosts(3);
 </BaseLayout>
 
 <style>
-  .hero-inner {
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding-block: 0;
+    min-height: min(46rem, calc(100svh - 4.5rem));
     display: flex;
     align-items: center;
-    gap: var(--space-7);
-    padding-block: var(--space-9) var(--space-7);
+    border-bottom: var(--border-width) solid var(--color-border);
   }
 
-  .hero-photo {
-    width: 11rem;
-    height: 11rem;
-    border-radius: var(--radius-lg);
-    object-fit: cover;
-    flex-shrink: 0;
-    border: var(--border-width) solid var(--color-border);
+  .hero-veil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      var(--color-bg) 0%,
+      color-mix(in srgb, var(--color-bg) 82%, transparent) 34%,
+      transparent 62%
+    );
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+    padding-block: var(--space-9);
+    pointer-events: none;
+  }
+
+  .hero-text {
+    max-width: 34rem;
+    pointer-events: auto;
+  }
+
+  .hero-eyebrow {
+    color: var(--color-accent);
+    letter-spacing: 0.14em;
+    margin-bottom: var(--space-4);
   }
 
   .hero-text h1 {
@@ -136,8 +168,35 @@ const bluesky = getBlueskyPosts(3);
     font-family: var(--font-serif);
     font-size: var(--step-1);
     color: var(--color-text);
-    max-width: 42rem;
+    max-width: 30rem;
     line-height: var(--leading-relaxed);
+  }
+
+  .hero-legend {
+    position: absolute;
+    right: var(--space-5);
+    bottom: var(--space-4);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+    font-size: 0.75rem;
+    color: var(--color-text-faint);
+    text-align: right;
+    pointer-events: none;
+  }
+
+  .legend-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-key i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
   }
 
   .hero-actions {
@@ -211,16 +270,19 @@ const bluesky = getBlueskyPosts(3);
   }
 
   @media (max-width: 640px) {
-    .hero-inner {
-      flex-direction: column;
+    .hero {
       align-items: flex-start;
-      text-align: left;
-      padding-block: var(--space-7) var(--space-5);
+      min-height: 0;
     }
 
-    .hero-photo {
-      width: 7rem;
-      height: 7rem;
+    .hero-inner {
+      /* reserve the lower part of the hero for the tissue */
+      padding-block: var(--space-7) 25rem;
     }
+
+    .hero-veil {
+      display: none;
+    }
+
   }
 </style>

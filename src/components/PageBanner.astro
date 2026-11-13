@@ -1,0 +1,70 @@
+---
+import TissueCanvas from './TissueCanvas.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  eyebrow?: string;
+}
+const { title, description, eyebrow } = Astro.props;
+---
+
+<header class="page-banner">
+  <TissueCanvas mode="banner" />
+  <div class="container banner-inner">
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h1>{title}</h1>
+    {description && <p class="banner-desc">{description}</p>}
+  </div>
+</header>
+
+<style>
+  .page-banner {
+    position: relative;
+    overflow: hidden;
+    border-bottom: var(--border-width) solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  /* Keep text readable where it overlaps the cells */
+  .page-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      var(--color-bg) 0%,
+      color-mix(in srgb, var(--color-bg) 80%, transparent) 40%,
+      transparent 75%
+    );
+  }
+
+  .banner-inner {
+    position: relative;
+    z-index: 1;
+    padding-block: var(--space-9) var(--space-7);
+  }
+
+  h1 {
+    font-size: var(--step-4);
+    margin-bottom: var(--space-3);
+  }
+
+  .banner-desc {
+    max-width: var(--measure-prose);
+    font-family: var(--font-serif);
+    font-size: var(--step-1);
+    color: var(--color-text-muted);
+    line-height: var(--leading-relaxed);
+  }
+
+  @media (max-width: 640px) {
+    .banner-inner {
+      padding-block: var(--space-7) var(--space-6);
+    }
+    .page-banner::after {
+      background: linear-gradient(180deg, var(--color-bg) 0%, color-mix(in srgb, var(--color-bg) 70%, transparent) 100%);
+    }
+  }
+</style>

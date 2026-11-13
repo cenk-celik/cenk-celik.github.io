@@ -264,5 +264,44 @@
     "pubmedUrl": null,
     "preprintUrl": null,
     "selected": false
+  },
+  {
+    "id": "evans2026-journal-of-experimental",
+    "title": "CD1d remodels the tumor-infiltrating myeloid populations controlling antitumor immunity",
+    "authors": ["L. Evans", "M. Conde Poole", "C. Celik", "H. Mishra", "M. J. Pitcher", "A. Grigoriadis", "M. Secrier", "P. Barral"],
+    "year": 2026,
+    "venue": "Journal of Experimental Medicine",
+    "type": "journal",
+    "doi": "10.1084/jem.20260216",
+    "url": "https://doi.org/10.1084/jem.20260216",
+    "pubmedUrl": null,
+    "preprintUrl": null,
+    "selected": false
+  },
+  {
+    "id": "celik2024-elife-2",
+    "title": "A single-cell atlas of E. faecalis wound infection reveals novel bacterial-host immunomodulatory mechanisms",
+    "authors": ["C. Celik", "S. Y. T. Lee", "F. R. Tanoto", "M. Veleba", "K. A. Kline", "G. Thibault"],
+    "year": 2024,
+    "venue": "eLife",
+    "type": "preprint",
+    "doi": "10.7554/elife.95113.1",
+    "url": "https://doi.org/10.7554/elife.95113.1",
+    "pubmedUrl": null,
+    "preprintUrl": "https://doi.org/10.7554/elife.95113.1",
+    "selected": false
+  },
+  {
+    "id": "celik2025-biorxiv",
+    "title": "Balancing tumour proliferation and sustained cell cycle arrest through proteostasis remodelling drives immune niche compartmentalisation in breast cancer",
+    "authors": ["C. Celik", "E. Withnell", "S. Pan", "T. Chu", "J. Labbadia", "M. Secrier"],
+    "year": 2025,
+    "venue": "bioRxiv",
+    "type": "preprint",
+    "doi": "10.1101/2025.01.08.632014",
+    "url": "https://doi.org/10.1101/2025.01.08.632014",
+    "pubmedUrl": null,
+    "preprintUrl": "https://doi.org/10.1101/2025.01.08.632014",
+    "selected": false
   }
 ]

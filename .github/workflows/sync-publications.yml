@@ -1,8 +1,8 @@
 name: Sync publications
 
 # Keeps publications.json's list of publications current - checks
-# Crossref weekly (via ORCID, see scripts/fetch_publications.py) and
-# adds any genuinely new entries automatically. Weekly rather than daily
+# Crossref monthly (via ORCID, see scripts/fetch_publications.py) and
+# adds any genuinely new entries automatically. Monthly rather than daily
 # because a new publication appearing is a rare event, unlike the daily
 # repos/Bluesky sync in sync-content.yml.
 #
@@ -12,7 +12,7 @@ name: Sync publications
 # history and the script's own module docstring for that whole story).
 on:
   schedule:
-    - cron: "0 6 * * 1" # 06:00 UTC every Monday
+    - cron: "0 6 1 * *" # 06:00 UTC on the 1st of every month
   workflow_dispatch:
 
 permissions:
